@@ -4,17 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/auth_service.dart';
 
-class SignUpPage extends StatefulWidget {
-  const SignUpPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<SignUpPage> createState() => _SignUpPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
+class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
   bool _isGoogleLoading = false;
@@ -26,7 +25,6 @@ class _SignUpPageState extends State<SignUpPage> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -44,7 +42,7 @@ class _SignUpPageState extends State<SignUpPage> {
             Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
             SizedBox(width: 10),
             Text(
-              "Success! Welcome 🎉",
+              "Welcome back! 👋",
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ],
@@ -54,25 +52,19 @@ class _SignUpPageState extends State<SignUpPage> {
 
     Future.delayed(const Duration(seconds: 1), () async {
       if (!mounted) return;
-      // Google users already have a displayName — skip /set-name for them
+      // Check per-account whether name has been set
       final hasSetName = await AuthService.hasSetName();
       context.go(hasSetName ? '/home' : '/set-name');
     });
   }
 
-  // 🔐 Email & Password Sign Up
-  Future<void> _signUpWithEmail() async {
+  // 🔑 Email & Password Sign In
+  Future<void> _signInWithEmail() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
-    final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (email.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = "Please fill in all fields.");
-      return;
-    }
-
-    if (password != confirmPassword) {
-      setState(() => _errorMessage = "Passwords do not match.");
       return;
     }
 
@@ -81,7 +73,7 @@ class _SignUpPageState extends State<SignUpPage> {
       _errorMessage = null;
     });
 
-    final result = await AuthService.signUpWithEmail(
+    final result = await AuthService.signInWithEmail(
       email: email,
       password: password,
     );
@@ -113,14 +105,6 @@ class _SignUpPageState extends State<SignUpPage> {
     } else if (!result.cancelled) {
       setState(() => _errorMessage = result.error);
     }
-  }
-
-  // 👤 Continue as Guest
-  Future<void> _continueAsGuest() async {
-    await AuthService.continueAsGuest();
-    if (!mounted) return;
-    final hasSetName = await AuthService.hasSetName();
-    context.go(hasSetName ? '/home' : '/set-name');
   }
 
   @override
@@ -177,7 +161,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             const SizedBox(height: 20),
 
                             Text(
-                              "Create Account",
+                              "Welcome Back",
                               style: theme.textTheme.headlineLarge?.copyWith(
                                 fontWeight: FontWeight.w900,
                                 letterSpacing: -1.0,
@@ -186,12 +170,9 @@ class _SignUpPageState extends State<SignUpPage> {
 
                             const SizedBox(height: 8),
 
-                            Padding(
-                              padding: const EdgeInsets.only(left: 2),
-                              child: Text(
-                                "Build habits that actually stick.",
-                                style: theme.textTheme.bodyMedium,
-                              ),
+                            Text(
+                              "Sign in to continue your streak.",
+                              style: theme.textTheme.bodyMedium,
                             ),
 
                             const SizedBox(height: 32),
@@ -246,35 +227,42 @@ class _SignUpPageState extends State<SignUpPage> {
                               controller: _passwordController,
                             ),
 
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
 
-                            _inputField(
-                              context,
-                              label: "Confirm Password",
-                              icon: Icons.lock_outline,
-                              hint: "••••••••",
-                              obscure: true,
-                              controller: _confirmPasswordController,
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  // TODO: hook up forgot password
+                                },
+                                style: TextButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  "Forgot password?",
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
                             ),
 
                             if (_errorMessage != null) ...[
                               const SizedBox(height: 16),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
+                                    horizontal: 16, vertical: 12),
                                 decoration: BoxDecoration(
                                   color: theme.colorScheme.error.withOpacity(0.08),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(
-                                      Icons.error_outline_rounded,
-                                      size: 18,
-                                      color: theme.colorScheme.error,
-                                    ),
+                                    Icon(Icons.error_outline_rounded,
+                                        size: 18, color: theme.colorScheme.error),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
@@ -298,14 +286,14 @@ class _SignUpPageState extends State<SignUpPage> {
                             Center(
                               child: Text.rich(
                                 TextSpan(
-                                  text: "Already have an account? ",
+                                  text: "Don't have an account? ",
                                   style: theme.textTheme.bodyMedium,
                                   children: [
                                     WidgetSpan(
                                       child: GestureDetector(
-                                        onTap: () => context.push('/login'),
+                                        onTap: () => context.push('/signup'),
                                         child: Text(
-                                          "Sign In",
+                                          "Sign Up",
                                           style: TextStyle(
                                             color: theme.colorScheme.primary,
                                             fontWeight: FontWeight.bold,
@@ -314,20 +302,6 @@ class _SignUpPageState extends State<SignUpPage> {
                                       ),
                                     ),
                                   ],
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            Center(
-                              child: TextButton(
-                                onPressed: _continueAsGuest,
-                                child: Text(
-                                  "Continue as guest",
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                                  ),
                                 ),
                               ),
                             ),
@@ -456,7 +430,7 @@ class _SignUpPageState extends State<SignUpPage> {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _signUpWithEmail,
+        onPressed: _isLoading ? null : _signInWithEmail,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -482,7 +456,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : Text(
-                    "Create Account",
+                    "Sign In",
                     style: theme.textTheme.labelLarge?.copyWith(color: Colors.white),
                   ),
           ),

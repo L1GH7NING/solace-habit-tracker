@@ -37,6 +37,11 @@ dependencies:
   go_router: ^17.2.0
   google_fonts: ^8.0.2
   lottie: ^3.3.2
+  firebase_core: ^4.6.0
+  firebase_auth: ^6.3.0
+  google_sign_in: ^6.2.1
+  flutter_svg: ^2.2.4
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +53,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  adaptive_icon_background: "#FBF8FE"
+  adaptive_icon_foreground: "assets/images/solace-icon-2-Photoroom.png"
+  image_path: "assets/images/solace-icon-2-Photoroom.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -64,6 +76,7 @@ flutter:
   assets:
     - assets/animations/
     - assets/images/
+    - assets/svgs/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

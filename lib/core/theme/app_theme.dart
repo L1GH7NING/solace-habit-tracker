@@ -23,9 +23,6 @@ class AppTheme {
 
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
-
-      background: AppColors.background,
-      onBackground: AppColors.textPrimary,
     ),
 
     // 🔤 Typography
@@ -57,9 +54,7 @@ class AppTheme {
         foregroundColor: Colors.white,
         elevation: 0,
         padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(40),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         textStyle: GoogleFonts.beVietnamPro(
           fontSize: 16,
           fontWeight: FontWeight.w700,
@@ -73,7 +68,7 @@ class AppTheme {
         foregroundColor: AppColors.primary,
         textStyle: GoogleFonts.beVietnamPro(
           fontWeight: FontWeight.w600,
-          color: Colors.white
+          color: Colors.white,
         ),
       ),
     ),
@@ -82,11 +77,8 @@ class AppTheme {
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: Colors.grey.shade100,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      hintStyle: GoogleFonts.beVietnamPro(
-        color: AppColors.textSecondary,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      hintStyle: GoogleFonts.beVietnamPro(color: AppColors.textSecondary),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
         borderSide: BorderSide.none,
@@ -96,9 +88,7 @@ class AppTheme {
     cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
   );
 }

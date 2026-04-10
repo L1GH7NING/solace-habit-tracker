@@ -11,7 +11,7 @@ class OnboardingPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: Stack(
         children: [
           // 🔮 Background Blobs
@@ -38,12 +38,7 @@ class OnboardingPage extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
-                      24,
-                      80,
-                      24,
-                      0,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 80, 24, 0),
                     child: Column(
                       children: [
                         // 🎬 Lottie Animation
@@ -129,20 +124,14 @@ class OnboardingPage extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.primary,
-                theme.colorScheme.secondary,
-              ],
+              colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
             ),
             borderRadius: BorderRadius.circular(40),
           ),
           child: Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(vertical: 18),
-            child: Text(
-              "Get started",
-              style: theme.textTheme.labelLarge,
-            ),
+            child: Text("Get started", style: theme.textTheme.labelLarge),
           ),
         ),
       ),
@@ -156,10 +145,7 @@ class OnboardingPage extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }
