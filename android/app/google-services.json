@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "472604179536",
+    "project_id": "solace-habit-tracker",
+    "storage_bucket": "solace-habit-tracker.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:472604179536:android:a0a1d82c39ef6eae65a555",
+        "android_client_info": {
+          "package_name": "com.example.zenith_habit_tracker"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "472604179536-v115nkl3p4jhevq2gs39o616ur8vefmq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.zenith_habit_tracker",
+            "certificate_hash": "3d2960f254c53ee0536539afee6b0be58184982d"
+          }
+        },
+        {
+          "client_id": "472604179536-gl0pbhf910nget4qf2792vpv30u8f5eh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCgliXsozXKzG5M0LqKshbgEbUH_cVNZWs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "472604179536-gl0pbhf910nget4qf2792vpv30u8f5eh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
