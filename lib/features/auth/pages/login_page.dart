@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
 import '../services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -52,6 +55,7 @@ class _LoginPageState extends State<LoginPage> {
 
     Future.delayed(const Duration(seconds: 1), () async {
       if (!mounted) return;
+
       // Check per-account whether name has been set
       final hasSetName = await AuthService.hasSetName();
       context.go(hasSetName ? '/home' : '/set-name');
@@ -118,12 +122,18 @@ class _LoginPageState extends State<LoginPage> {
           Positioned(
             top: 120,
             left: -80,
-            child: _blurCircle(theme.colorScheme.primary.withOpacity(0.15), 250),
+            child: BlurCircle(
+              color: theme.colorScheme.primary.withOpacity(0.15),
+              size: 250,
+            ),
           ),
           Positioned(
             bottom: 120,
             right: -80,
-            child: _blurCircle(theme.colorScheme.secondary.withOpacity(0.2), 300),
+            child: BlurCircle(
+              color: theme.colorScheme.secondary.withOpacity(0.2),
+              size: 300,
+            ),
           ),
 
           SafeArea(
@@ -461,17 +471,6 @@ class _LoginPageState extends State<LoginPage> {
                   ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _blurCircle(Color color, double size) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }

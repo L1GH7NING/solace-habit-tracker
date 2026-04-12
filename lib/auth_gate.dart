@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'services/auth_service.dart'; // ⚠️ adjust path
+import 'features/auth/services/auth_service.dart'; // ⚠️ adjust path
 
 /// Sits at the root of the app and redirects based on auth state.
 /// Firebase persists sessions automatically — if the user was logged in,

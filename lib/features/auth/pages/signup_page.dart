@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
 import '../services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -45,7 +48,10 @@ class _SignUpPageState extends State<SignUpPage> {
             SizedBox(width: 10),
             Text(
               "Success! Welcome 🎉",
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -119,6 +125,7 @@ class _SignUpPageState extends State<SignUpPage> {
   Future<void> _continueAsGuest() async {
     await AuthService.continueAsGuest();
     if (!mounted) return;
+
     final hasSetName = await AuthService.hasSetName();
     context.go(hasSetName ? '/home' : '/set-name');
   }
@@ -134,12 +141,18 @@ class _SignUpPageState extends State<SignUpPage> {
           Positioned(
             top: 120,
             left: -80,
-            child: _blurCircle(theme.colorScheme.primary.withOpacity(0.15), 250),
+            child: BlurCircle(
+              color: theme.colorScheme.primary.withOpacity(0.15),
+              size: 250,
+            ),
           ),
           Positioned(
             bottom: 120,
             right: -80,
-            child: _blurCircle(theme.colorScheme.secondary.withOpacity(0.2), 300),
+            child: BlurCircle(
+              color: theme.colorScheme.secondary.withOpacity(0.2),
+              size: 300,
+            ),
           ),
 
           SafeArea(
@@ -204,21 +217,26 @@ class _SignUpPageState extends State<SignUpPage> {
                               children: [
                                 Expanded(
                                   child: Divider(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.12),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.12),
                                   ),
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                  ),
                                   child: Text(
                                     "or",
                                     style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurface.withOpacity(0.4),
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.4),
                                     ),
                                   ),
                                 ),
                                 Expanded(
                                   child: Divider(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.12),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.12),
                                   ),
                                 ),
                               ],
@@ -265,7 +283,9 @@ class _SignUpPageState extends State<SignUpPage> {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.error.withOpacity(0.08),
+                                  color: theme.colorScheme.error.withOpacity(
+                                    0.08,
+                                  ),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Row(
@@ -279,9 +299,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                     Expanded(
                                       child: Text(
                                         _errorMessage!,
-                                        style: theme.textTheme.bodyMedium?.copyWith(
-                                          color: theme.colorScheme.error,
-                                        ),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.error,
+                                            ),
                                       ),
                                     ),
                                   ],
@@ -326,7 +347,8 @@ class _SignUpPageState extends State<SignUpPage> {
                                 child: Text(
                                   "Continue as guest",
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurface.withOpacity(0.5),
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.5),
                                   ),
                                 ),
                               ),
@@ -373,7 +395,9 @@ class _SignUpPageState extends State<SignUpPage> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(_buttonRadius),
           ),
-          side: BorderSide(color: theme.colorScheme.onSurface.withOpacity(0.08)),
+          side: BorderSide(
+            color: theme.colorScheme.onSurface.withOpacity(0.08),
+          ),
           backgroundColor: theme.colorScheme.surface,
         ),
         child: SizedBox(
@@ -392,7 +416,11 @@ class _SignUpPageState extends State<SignUpPage> {
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SvgPicture.asset('assets/svgs/google-logo.svg', width: 20, height: 20),
+                    SvgPicture.asset(
+                      'assets/svgs/google-logo.svg',
+                      width: 20,
+                      height: 20,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       "Continue with Google",
@@ -479,25 +507,19 @@ class _SignUpPageState extends State<SignUpPage> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : Text(
                     "Create Account",
-                    style: theme.textTheme.labelLarge?.copyWith(color: Colors.white),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _blurCircle(Color color, double size) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }

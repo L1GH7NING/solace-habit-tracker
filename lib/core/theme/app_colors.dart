@@ -10,6 +10,8 @@ class AppColors {
   // 🧱 Surfaces
   static const background = Color(0xFFF6F6FB);
   static const surface = Colors.white;
+  static const onSurfaceVariant = Color(0xFF7B7A84);
+  static const secondaryContainer = Color(0xFFE1DFFF);
 
   // 🔤 Text
   static const textPrimary = Color(0xFF1C1C1E);

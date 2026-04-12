@@ -23,6 +23,8 @@ class AppTheme {
 
       surface: AppColors.surface,
       onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.onSurfaceVariant,
+      secondaryContainer: AppColors.secondaryContainer
     ),
 
     // 🔤 Typography

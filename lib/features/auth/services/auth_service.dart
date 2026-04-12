@@ -100,6 +100,7 @@ class AuthService {
     final user = _auth.currentUser;
     if (user != null) {
       await user.updateDisplayName(name);
+      await user.reload();
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('display_name', name);
