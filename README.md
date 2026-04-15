@@ -1,4 +1,4 @@
-# zenith_habit_tracker
+# Solace
 
 A new Flutter project.
 
