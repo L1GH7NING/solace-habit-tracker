@@ -35,6 +35,23 @@ class DailyHabitsSection extends StatelessWidget {
     final habitService = HabitService(
       Provider.of<AppDatabase>(context, listen: false),
     );
+
+    // ─── SORTING LOGIC ───
+    // We create a mutable copy of the list and sort it by habitTime
+    final sortedHabits = List<Habit>.from(dailyHabits)
+      ..sort((a, b) {
+        final timeA = a.habitTime;
+        final timeB = b.habitTime;
+
+        // Handle null values (habits without a set time go to the bottom)
+        if (timeA == null && timeB == null) return 0;
+        if (timeA == null) return 1;
+        if (timeB == null) return -1;
+
+        // Standard string or DateTime comparison
+        return timeA.compareTo(timeB);
+      });
+
     final completedCount = dailyHabits
         .where((h) => _progressFor(h) >= h.targetValue)
         .length;
@@ -69,7 +86,8 @@ class DailyHabitsSection extends StatelessWidget {
           title: isToday ? "Today's Habits" : "Habits for $formattedDate",
         ),
         const SizedBox(height: 12),
-        ...dailyHabits.map(
+        // ─── RENDERING SORTED LIST ───
+        ...sortedHabits.map(
           (habit) => HabitCard(
             key: ValueKey('daily_${habit.id}_$selectedDate'),
             habit: habit,

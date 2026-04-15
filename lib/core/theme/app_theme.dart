@@ -83,6 +83,14 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
+
+    extensions: [
+      AcrylicTheme(
+        backgroundColor: Colors.white.withOpacity(0.65),
+        borderColor: Colors.black.withOpacity(0.08), // Dark stroke for light mode
+        shadowColor: Colors.black.withOpacity(0.06),
+      ),
+    ],
   );
 
   // 🌙 DARK THEME (New and tailored to your AppColors)
@@ -165,5 +173,49 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
+
+    extensions: [
+      AcrylicTheme(
+        backgroundColor: const Color(0xFF1E1E1E).withOpacity(0.7),
+        borderColor: Colors.white.withOpacity(0.12), // Light stroke for dark mode
+        shadowColor: Colors.black.withOpacity(0.4),
+      ),
+    ],
   );
+}
+
+// Add this class at the bottom of your app_theme.dart
+class AcrylicTheme extends ThemeExtension<AcrylicTheme> {
+  final Color backgroundColor;
+  final Color borderColor;
+  final Color shadowColor;
+
+  const AcrylicTheme({
+    required this.backgroundColor,
+    required this.borderColor,
+    required this.shadowColor,
+  });
+
+  @override
+  ThemeExtension<AcrylicTheme> copyWith({
+    Color? backgroundColor,
+    Color? borderColor,
+    Color? shadowColor,
+  }) {
+    return AcrylicTheme(
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      borderColor: borderColor ?? this.borderColor,
+      shadowColor: shadowColor ?? this.shadowColor,
+    );
+  }
+
+  @override
+  ThemeExtension<AcrylicTheme> lerp(ThemeExtension<AcrylicTheme>? other, double t) {
+    if (other is! AcrylicTheme) return this;
+    return AcrylicTheme(
+      backgroundColor: Color.lerp(backgroundColor, other.backgroundColor, t)!,
+      borderColor: Color.lerp(borderColor, other.borderColor, t)!,
+      shadowColor: Color.lerp(shadowColor, other.shadowColor, t)!,
+    );
+  }
 }
