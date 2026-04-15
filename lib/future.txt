@@ -1,0 +1,245 @@
+  // // ─── Challenges ───────────────────────────────────────────────────────────
+  // Widget _buildChallengesSection() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  //         children: [
+  //           const Text(
+  //             'Challenges',
+  //             style: TextStyle(
+  //               fontWeight: FontWeight.w800,
+  //               fontSize: 18,
+  //               letterSpacing: -0.5,
+  //               color: _onSurface,
+  //             ),
+  //           ),
+  //           TextButton(
+  //             onPressed: () {},
+  //             child: const Text(
+  //               'View All',
+  //               style: TextStyle(
+  //                 color: _primary,
+  //                 fontWeight: FontWeight.w700,
+  //                 fontSize: 12,
+  //               ),
+  //             ),
+  //           ),
+  //         ],
+  //       ),
+  //       const SizedBox(height: 4),
+  //       SizedBox(
+  //         height: 170,
+  //         child: ListView(
+  //           scrollDirection: Axis.horizontal,
+  //           physics: const BouncingScrollPhysics(),
+  //           children: [
+  //             _ChallengeCard(
+  //               icon: '🏃',
+  //               title: '30-Day Morning Cardio',
+  //               subtitle: '24 days remaining',
+  //               progress: 0.2,
+  //               type: _ChallengeType.gradient,
+  //               badgeLabel: 'Active',
+  //             ),
+  //             const SizedBox(width: 12),
+  //             _ChallengeCard(
+  //               icon: '🧘',
+  //               title: 'Deep Meditation Week',
+  //               subtitle: 'Starts Tomorrow',
+  //               progress: null,
+  //               type: _ChallengeType.light,
+  //               badgeLabel: 'New',
+  //             ),
+  //             const SizedBox(width: 12),
+  //             _ChallengeCard(
+  //               icon: '💧',
+  //               title: 'Hydration Hero',
+  //               subtitle: 'Day 14/14 · Final Day!',
+  //               progress: 0.95,
+  //               type: _ChallengeType.warm,
+  //               badgeLabel: 'Streak',
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+// // ─── Challenge Card ───────────────────────────────────────────────────────
+// enum _ChallengeType { gradient, light, warm }
+
+// class _ChallengeCard extends StatelessWidget {
+//   final String icon;
+//   final String title;
+//   final String subtitle;
+//   final double? progress;
+//   final _ChallengeType type;
+//   final String badgeLabel;
+
+//   const _ChallengeCard({
+//     required this.icon,
+//     required this.title,
+//     required this.subtitle,
+//     required this.progress,
+//     required this.type,
+//     required this.badgeLabel,
+//   });
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final isGrad = type == _ChallengeType.gradient;
+//     final isWarm = type == _ChallengeType.warm;
+
+//     return Container(
+//       width: 220,
+//       padding: const EdgeInsets.all(18),
+//       decoration: BoxDecoration(
+//         gradient: isGrad
+//             ? const LinearGradient(
+//                 colors: [_secondary, _primary],
+//                 begin: Alignment.topLeft,
+//                 end: Alignment.bottomRight,
+//               )
+//             : null,
+//         color: isGrad
+//             ? null
+//             : (isWarm ? const Color(0xFFFFF5F5) : Colors.white),
+//         borderRadius: BorderRadius.circular(20),
+//         border: isGrad
+//             ? null
+//             : Border.all(
+//                 color: isWarm
+//                     ? const Color(0xFFFECED1)
+//                     : const Color(0xFFE3E1ED),
+//               ),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withOpacity(0.05),
+//             blurRadius: 16,
+//             offset: const Offset(0, 4),
+//           ),
+//         ],
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           // Top row
+//           Row(
+//             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+//             children: [
+//               Container(
+//                 width: 36,
+//                 height: 36,
+//                 decoration: BoxDecoration(
+//                   color: isGrad ? Colors.white.withOpacity(0.2) : Colors.white,
+//                   borderRadius: BorderRadius.circular(10),
+//                   boxShadow: isGrad
+//                       ? null
+//                       : [
+//                           BoxShadow(
+//                             color: Colors.black.withOpacity(0.06),
+//                             blurRadius: 6,
+//                           ),
+//                         ],
+//                 ),
+//                 alignment: Alignment.center,
+//                 child: Text(icon, style: const TextStyle(fontSize: 16)),
+//               ),
+//               Container(
+//                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+//                 decoration: BoxDecoration(
+//                   color: isGrad
+//                       ? Colors.white.withOpacity(0.2)
+//                       : (isWarm
+//                             ? const Color(0xFFF97386).withOpacity(0.15)
+//                             : _secondaryContainer),
+//                   borderRadius: BorderRadius.circular(99),
+//                 ),
+//                 child: Text(
+//                   badgeLabel.toUpperCase(),
+//                   style: TextStyle(
+//                     fontSize: 9,
+//                     fontWeight: FontWeight.w800,
+//                     letterSpacing: 0.8,
+//                     color: isGrad
+//                         ? Colors.white
+//                         : (isWarm ? _error : _secondary),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+
+//           const Spacer(),
+
+//           // Title & subtitle
+//           Text(
+//             title,
+//             style: TextStyle(
+//               fontFamily: 'Plus Jakarta Sans',
+//               fontWeight: FontWeight.w800,
+//               fontSize: 14,
+//               color: isGrad ? Colors.white : _onSurface,
+//               height: 1.3,
+//             ),
+//             maxLines: 2,
+//             overflow: TextOverflow.ellipsis,
+//           ),
+//           const SizedBox(height: 3),
+//           Text(
+//             subtitle,
+//             style: TextStyle(
+//               fontSize: 11,
+//               fontWeight: FontWeight.w500,
+//               color: isGrad
+//                   ? Colors.white.withOpacity(0.65)
+//                   : _onSurfaceVariant,
+//             ),
+//           ),
+
+//           if (progress != null) ...[
+//             const SizedBox(height: 10),
+//             ClipRRect(
+//               borderRadius: BorderRadius.circular(99),
+//               child: LinearProgressIndicator(
+//                 value: progress!,
+//                 minHeight: 4,
+//                 backgroundColor: isGrad
+//                     ? Colors.white.withOpacity(0.2)
+//                     : _secondaryContainer,
+//                 valueColor: AlwaysStoppedAnimation<Color>(
+//                   isGrad ? Colors.white : _error,
+//                 ),
+//               ),
+//             ),
+//           ] else ...[
+//             const SizedBox(height: 10),
+//             SizedBox(
+//               width: double.infinity,
+//               child: ElevatedButton(
+//                 onPressed: () {},
+//                 style: ElevatedButton.styleFrom(
+//                   backgroundColor: _onSurface,
+//                   foregroundColor: _surface,
+//                   padding: const EdgeInsets.symmetric(vertical: 8),
+//                   shape: RoundedRectangleBorder(
+//                     borderRadius: BorderRadius.circular(99),
+//                   ),
+//                   elevation: 0,
+//                   textStyle: const TextStyle(
+//                     fontSize: 11,
+//                     fontWeight: FontWeight.w700,
+//                   ),
+//                 ),
+//                 child: const Text('Join Challenge'),
+//               ),
+//             ),
+//           ],
+//         ],
+//       ),
+//     );
+//   }
+// }

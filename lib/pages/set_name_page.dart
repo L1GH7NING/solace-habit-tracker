@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../services/auth_service.dart'; // ⚠️ adjust path
+import '../features/auth/services/auth_service.dart'; // ⚠️ adjust path
 
 class SetNamePage extends StatefulWidget {
   const SetNamePage({super.key});
