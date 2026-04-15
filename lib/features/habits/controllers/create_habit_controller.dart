@@ -1,23 +1,41 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart'; // ⚠️ adjust path
 import 'package:drift/drift.dart' show Value;
+import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/habit_controller_base.dart';
 
 class CreateHabitController implements HabitControllerBase {
   final BuildContext context;
   final AppDatabase db;
 
-  // ── Form state (owned by the controller, exposed to the view) ─────────────
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final logger = Logger();
 
-  String selectedIcon = '⭐';
-  String frequencyType = 'DAILY'; // 'DAILY' | 'WEEKLY' | 'MONTHLY'
-  List<String> frequencyDays = []; // e.g. ['MON', 'WED', 'FRI']
-  int targetCount = 1;
-  int selectedColor = 0xFF5D5FEF; // ARGB int — matches AppColors.primary
+  @override
+  String selectedIcon = 'run';
+
+  @override
+  int selectedColor = 0xFF5D5FEF;
+
+  String frequencyType = 'DAILY';
+  List<String> frequencyDays = [
+    'MON',
+    'TUE',
+    'WED',
+    'THU',
+    'FRI',
+    'SAT',
+    'SUN',
+  ];
+
+  // ✅ New schema fields
+  double targetValue = 1;
+  String unit = 'times';
+
   DateTime startDate = DateTime.now();
 
   CreateHabitController({required this.context, required this.db});
@@ -27,66 +45,36 @@ class CreateHabitController implements HabitControllerBase {
     descriptionController.dispose();
   }
 
-  // ── Save ──────────────────────────────────────────────────────────────────
-
-  Future<void> saveHabit({int? habitTime, int? reminderTime}) async {
-    final title = titleController.text.trim();
-
-    if (title.isEmpty) {
-      _showError('Please enter a habit name.');
-      return;
-    }
-
-    final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
-
-    await db.insertHabit(
-      HabitsCompanion.insert(
-        userId: userId,
-        title: title,
-        description: Value(
-          descriptionController.text.trim().isEmpty
-              ? null
-              : descriptionController.text.trim(),
-        ),
-        icon: selectedIcon,
-        color: selectedColor,
-        frequencyType: Value(frequencyType),
-        frequencyDays: Value(
-          frequencyDays.isEmpty ? null : frequencyDays.join(','),
-        ),
-        targetCount: Value(targetCount),
-        startDate: startDate,
-        updatedAt: DateTime.now(),
-        habitTime: Value(habitTime),
-        reminderTime: Value(reminderTime),
-        // isSynced defaults to false — picked up by sync queue later
-      ),
-    );
-
-    if (context.mounted) {
-      _showSuccess('Habit created!');
-      // Small delay so the snackbar is visible before pop
-      await Future.delayed(const Duration(milliseconds: 600));
-      if (context.mounted) context.pop();
+  // ── Infer habit type from unit ─────────────────────────────────────────────
+  String get _habitType {
+    switch (unit) {
+      case 'times':
+        return 'count';
+      case 'minutes':
+      case 'hours':
+        return 'duration';
+      default:
+        return 'quantity';
     }
   }
 
-  // ── Target count ──────────────────────────────────────────────────────────
+  // ── Stepper helpers (used when unit == "times") ───────────────────────────
+  int get targetCount => targetValue.toInt();
 
   void incrementTarget() {
-    if (targetCount < 99) targetCount++;
+    if (targetValue < 99) targetValue++;
   }
 
   void decrementTarget() {
-    if (targetCount > 1) targetCount--;
+    if (targetValue > 1) targetValue--;
   }
 
   // ── Frequency ─────────────────────────────────────────────────────────────
-
   void setFrequency(String type) {
     frequencyType = type;
-    // Reset custom days when switching away from custom
-    if (type != 'WEEKLY') frequencyDays = [];
+    if (type != 'WEEKLY') {
+      frequencyDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    }
   }
 
   void toggleFrequencyDay(String day) {
@@ -97,61 +85,63 @@ class CreateHabitController implements HabitControllerBase {
     }
   }
 
-  // ── Snackbars ─────────────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
+  Future<bool> saveHabit({int? habitTime, int? reminderTime}) async {
+    final title = titleController.text.trim();
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+    if (title.isEmpty) {
+      _showError('Please enter a habit name.');
+      return false;
+    }
+
+    if (targetValue <= 0) {
+      _showError('Goal must be greater than zero.');
+      return false;
+    }
+
+    if (frequencyType == 'DAILY' && frequencyDays.isEmpty) {
+      _showError('Please select atleast one day for a daily habit');
+      return false;
+    }
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
+
+      await db.insertHabit(
+        HabitsCompanion.insert(
+          userId: userId,
+          title: title,
+          description: Value(
+            descriptionController.text.trim().isEmpty
+                ? null
+                : descriptionController.text.trim(),
+          ),
+          icon: selectedIcon,
+          color: selectedColor,
+          frequencyType: Value(frequencyType),
+          frequencyDays: Value(
+            frequencyDays.isEmpty ? null : frequencyDays.join(','),
+          ),
+          targetValue: Value(targetValue),
+          unit: Value(unit),
+          type: Value(_habitType),
+          startDate: startDate,
+          updatedAt: DateTime.now(),
+          habitTime: Value(habitTime),
+          reminderTime: Value(reminderTime),
         ),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
+      );
+
+      if (context.mounted) context.go('/home');
+      return true;
+    } catch (e) {
+      logger.e('❌ Error creating habit: $e');
+      _showError('Failed to create habit: ${e.toString()}');
+      return false;
+    }
   }
 
-  void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.check_circle_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green.shade700,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      ),
-    );
+  void _showError(String message) {
+    showAppSnackBar(context, message, type: SnackBarType.error);
   }
 }

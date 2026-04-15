@@ -11,7 +11,7 @@ class OnboardingPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // 🔮 Background Blobs

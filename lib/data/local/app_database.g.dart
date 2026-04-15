@@ -102,17 +102,36 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _targetCountMeta = const VerificationMeta(
-    'targetCount',
+  static const VerificationMeta _targetValueMeta = const VerificationMeta(
+    'targetValue',
   );
   @override
-  late final GeneratedColumn<int> targetCount = GeneratedColumn<int>(
-    'target_count',
+  late final GeneratedColumn<double> targetValue = GeneratedColumn<double>(
+    'target_value',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.double,
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _unitMeta = const VerificationMeta('unit');
+  @override
+  late final GeneratedColumn<String> unit = GeneratedColumn<String>(
+    'unit',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('times'),
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _startDateMeta = const VerificationMeta(
     'startDate',
@@ -221,7 +240,9 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
     icon,
     frequencyType,
     frequencyDays,
-    targetCount,
+    targetValue,
+    unit,
+    type,
     startDate,
     endDate,
     habitTime,
@@ -311,13 +332,25 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         ),
       );
     }
-    if (data.containsKey('target_count')) {
+    if (data.containsKey('target_value')) {
       context.handle(
-        _targetCountMeta,
-        targetCount.isAcceptableOrUnknown(
-          data['target_count']!,
-          _targetCountMeta,
+        _targetValueMeta,
+        targetValue.isAcceptableOrUnknown(
+          data['target_value']!,
+          _targetValueMeta,
         ),
+      );
+    }
+    if (data.containsKey('unit')) {
+      context.handle(
+        _unitMeta,
+        unit.isAcceptableOrUnknown(data['unit']!, _unitMeta),
+      );
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
       );
     }
     if (data.containsKey('start_date')) {
@@ -423,10 +456,18 @@ class $HabitsTable extends Habits with TableInfo<$HabitsTable, Habit> {
         DriftSqlType.string,
         data['${effectivePrefix}frequency_days'],
       ),
-      targetCount: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}target_count'],
+      targetValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}target_value'],
       )!,
+      unit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unit'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      ),
       startDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}start_date'],
@@ -478,7 +519,9 @@ class Habit extends DataClass implements Insertable<Habit> {
   final String icon;
   final String frequencyType;
   final String? frequencyDays;
-  final int targetCount;
+  final double targetValue;
+  final String unit;
+  final String? type;
   final DateTime startDate;
   final DateTime? endDate;
   final int? habitTime;
@@ -497,7 +540,9 @@ class Habit extends DataClass implements Insertable<Habit> {
     required this.icon,
     required this.frequencyType,
     this.frequencyDays,
-    required this.targetCount,
+    required this.targetValue,
+    required this.unit,
+    this.type,
     required this.startDate,
     this.endDate,
     this.habitTime,
@@ -525,7 +570,11 @@ class Habit extends DataClass implements Insertable<Habit> {
     if (!nullToAbsent || frequencyDays != null) {
       map['frequency_days'] = Variable<String>(frequencyDays);
     }
-    map['target_count'] = Variable<int>(targetCount);
+    map['target_value'] = Variable<double>(targetValue);
+    map['unit'] = Variable<String>(unit);
+    if (!nullToAbsent || type != null) {
+      map['type'] = Variable<String>(type);
+    }
     map['start_date'] = Variable<DateTime>(startDate);
     if (!nullToAbsent || endDate != null) {
       map['end_date'] = Variable<DateTime>(endDate);
@@ -562,7 +611,9 @@ class Habit extends DataClass implements Insertable<Habit> {
       frequencyDays: frequencyDays == null && nullToAbsent
           ? const Value.absent()
           : Value(frequencyDays),
-      targetCount: Value(targetCount),
+      targetValue: Value(targetValue),
+      unit: Value(unit),
+      type: type == null && nullToAbsent ? const Value.absent() : Value(type),
       startDate: Value(startDate),
       endDate: endDate == null && nullToAbsent
           ? const Value.absent()
@@ -597,7 +648,9 @@ class Habit extends DataClass implements Insertable<Habit> {
       icon: serializer.fromJson<String>(json['icon']),
       frequencyType: serializer.fromJson<String>(json['frequencyType']),
       frequencyDays: serializer.fromJson<String?>(json['frequencyDays']),
-      targetCount: serializer.fromJson<int>(json['targetCount']),
+      targetValue: serializer.fromJson<double>(json['targetValue']),
+      unit: serializer.fromJson<String>(json['unit']),
+      type: serializer.fromJson<String?>(json['type']),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       habitTime: serializer.fromJson<int?>(json['habitTime']),
@@ -621,7 +674,9 @@ class Habit extends DataClass implements Insertable<Habit> {
       'icon': serializer.toJson<String>(icon),
       'frequencyType': serializer.toJson<String>(frequencyType),
       'frequencyDays': serializer.toJson<String?>(frequencyDays),
-      'targetCount': serializer.toJson<int>(targetCount),
+      'targetValue': serializer.toJson<double>(targetValue),
+      'unit': serializer.toJson<String>(unit),
+      'type': serializer.toJson<String?>(type),
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'habitTime': serializer.toJson<int?>(habitTime),
@@ -643,7 +698,9 @@ class Habit extends DataClass implements Insertable<Habit> {
     String? icon,
     String? frequencyType,
     Value<String?> frequencyDays = const Value.absent(),
-    int? targetCount,
+    double? targetValue,
+    String? unit,
+    Value<String?> type = const Value.absent(),
     DateTime? startDate,
     Value<DateTime?> endDate = const Value.absent(),
     Value<int?> habitTime = const Value.absent(),
@@ -664,7 +721,9 @@ class Habit extends DataClass implements Insertable<Habit> {
     frequencyDays: frequencyDays.present
         ? frequencyDays.value
         : this.frequencyDays,
-    targetCount: targetCount ?? this.targetCount,
+    targetValue: targetValue ?? this.targetValue,
+    unit: unit ?? this.unit,
+    type: type.present ? type.value : this.type,
     startDate: startDate ?? this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
     habitTime: habitTime.present ? habitTime.value : this.habitTime,
@@ -693,9 +752,11 @@ class Habit extends DataClass implements Insertable<Habit> {
       frequencyDays: data.frequencyDays.present
           ? data.frequencyDays.value
           : this.frequencyDays,
-      targetCount: data.targetCount.present
-          ? data.targetCount.value
-          : this.targetCount,
+      targetValue: data.targetValue.present
+          ? data.targetValue.value
+          : this.targetValue,
+      unit: data.unit.present ? data.unit.value : this.unit,
+      type: data.type.present ? data.type.value : this.type,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       habitTime: data.habitTime.present ? data.habitTime.value : this.habitTime,
@@ -725,7 +786,9 @@ class Habit extends DataClass implements Insertable<Habit> {
           ..write('icon: $icon, ')
           ..write('frequencyType: $frequencyType, ')
           ..write('frequencyDays: $frequencyDays, ')
-          ..write('targetCount: $targetCount, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('unit: $unit, ')
+          ..write('type: $type, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('habitTime: $habitTime, ')
@@ -749,7 +812,9 @@ class Habit extends DataClass implements Insertable<Habit> {
     icon,
     frequencyType,
     frequencyDays,
-    targetCount,
+    targetValue,
+    unit,
+    type,
     startDate,
     endDate,
     habitTime,
@@ -772,7 +837,9 @@ class Habit extends DataClass implements Insertable<Habit> {
           other.icon == this.icon &&
           other.frequencyType == this.frequencyType &&
           other.frequencyDays == this.frequencyDays &&
-          other.targetCount == this.targetCount &&
+          other.targetValue == this.targetValue &&
+          other.unit == this.unit &&
+          other.type == this.type &&
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.habitTime == this.habitTime &&
@@ -793,7 +860,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
   final Value<String> icon;
   final Value<String> frequencyType;
   final Value<String?> frequencyDays;
-  final Value<int> targetCount;
+  final Value<double> targetValue;
+  final Value<String> unit;
+  final Value<String?> type;
   final Value<DateTime> startDate;
   final Value<DateTime?> endDate;
   final Value<int?> habitTime;
@@ -812,7 +881,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     this.icon = const Value.absent(),
     this.frequencyType = const Value.absent(),
     this.frequencyDays = const Value.absent(),
-    this.targetCount = const Value.absent(),
+    this.targetValue = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.type = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.habitTime = const Value.absent(),
@@ -832,7 +903,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     required String icon,
     this.frequencyType = const Value.absent(),
     this.frequencyDays = const Value.absent(),
-    this.targetCount = const Value.absent(),
+    this.targetValue = const Value.absent(),
+    this.unit = const Value.absent(),
+    this.type = const Value.absent(),
     required DateTime startDate,
     this.endDate = const Value.absent(),
     this.habitTime = const Value.absent(),
@@ -857,7 +930,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Expression<String>? icon,
     Expression<String>? frequencyType,
     Expression<String>? frequencyDays,
-    Expression<int>? targetCount,
+    Expression<double>? targetValue,
+    Expression<String>? unit,
+    Expression<String>? type,
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<int>? habitTime,
@@ -877,7 +952,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       if (icon != null) 'icon': icon,
       if (frequencyType != null) 'frequency_type': frequencyType,
       if (frequencyDays != null) 'frequency_days': frequencyDays,
-      if (targetCount != null) 'target_count': targetCount,
+      if (targetValue != null) 'target_value': targetValue,
+      if (unit != null) 'unit': unit,
+      if (type != null) 'type': type,
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (habitTime != null) 'habit_time': habitTime,
@@ -899,7 +976,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     Value<String>? icon,
     Value<String>? frequencyType,
     Value<String?>? frequencyDays,
-    Value<int>? targetCount,
+    Value<double>? targetValue,
+    Value<String>? unit,
+    Value<String?>? type,
     Value<DateTime>? startDate,
     Value<DateTime?>? endDate,
     Value<int?>? habitTime,
@@ -919,7 +998,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
       icon: icon ?? this.icon,
       frequencyType: frequencyType ?? this.frequencyType,
       frequencyDays: frequencyDays ?? this.frequencyDays,
-      targetCount: targetCount ?? this.targetCount,
+      targetValue: targetValue ?? this.targetValue,
+      unit: unit ?? this.unit,
+      type: type ?? this.type,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       habitTime: habitTime ?? this.habitTime,
@@ -961,8 +1042,14 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
     if (frequencyDays.present) {
       map['frequency_days'] = Variable<String>(frequencyDays.value);
     }
-    if (targetCount.present) {
-      map['target_count'] = Variable<int>(targetCount.value);
+    if (targetValue.present) {
+      map['target_value'] = Variable<double>(targetValue.value);
+    }
+    if (unit.present) {
+      map['unit'] = Variable<String>(unit.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
     }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
@@ -1003,7 +1090,9 @@ class HabitsCompanion extends UpdateCompanion<Habit> {
           ..write('icon: $icon, ')
           ..write('frequencyType: $frequencyType, ')
           ..write('frequencyDays: $frequencyDays, ')
-          ..write('targetCount: $targetCount, ')
+          ..write('targetValue: $targetValue, ')
+          ..write('unit: $unit, ')
+          ..write('type: $type, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('habitTime: $habitTime, ')
@@ -1081,13 +1170,13 @@ class $HabitCompletionsTable extends HabitCompletions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _countMeta = const VerificationMeta('count');
+  static const VerificationMeta _valueMeta = const VerificationMeta('value');
   @override
-  late final GeneratedColumn<int> count = GeneratedColumn<int>(
-    'count',
+  late final GeneratedColumn<double> value = GeneratedColumn<double>(
+    'value',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.double,
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
@@ -1144,7 +1233,7 @@ class $HabitCompletionsTable extends HabitCompletions
     habitId,
     userId,
     completedAt,
-    count,
+    value,
     note,
     updatedAt,
     isSynced,
@@ -1198,10 +1287,10 @@ class $HabitCompletionsTable extends HabitCompletions
     } else if (isInserting) {
       context.missing(_completedAtMeta);
     }
-    if (data.containsKey('count')) {
+    if (data.containsKey('value')) {
       context.handle(
-        _countMeta,
-        count.isAcceptableOrUnknown(data['count']!, _countMeta),
+        _valueMeta,
+        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
       );
     }
     if (data.containsKey('note')) {
@@ -1262,9 +1351,9 @@ class $HabitCompletionsTable extends HabitCompletions
         DriftSqlType.dateTime,
         data['${effectivePrefix}completed_at'],
       )!,
-      count: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}count'],
+      value: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}value'],
       )!,
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1297,7 +1386,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
   final int habitId;
   final String userId;
   final DateTime completedAt;
-  final int count;
+  final double value;
   final String? note;
   final DateTime updatedAt;
   final bool isSynced;
@@ -1308,7 +1397,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
     required this.habitId,
     required this.userId,
     required this.completedAt,
-    required this.count,
+    required this.value,
     this.note,
     required this.updatedAt,
     required this.isSynced,
@@ -1324,7 +1413,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
     map['habit_id'] = Variable<int>(habitId);
     map['user_id'] = Variable<String>(userId);
     map['completed_at'] = Variable<DateTime>(completedAt);
-    map['count'] = Variable<int>(count);
+    map['value'] = Variable<double>(value);
     if (!nullToAbsent || note != null) {
       map['note'] = Variable<String>(note);
     }
@@ -1345,7 +1434,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
       habitId: Value(habitId),
       userId: Value(userId),
       completedAt: Value(completedAt),
-      count: Value(count),
+      value: Value(value),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
       updatedAt: Value(updatedAt),
       isSynced: Value(isSynced),
@@ -1366,7 +1455,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
       habitId: serializer.fromJson<int>(json['habitId']),
       userId: serializer.fromJson<String>(json['userId']),
       completedAt: serializer.fromJson<DateTime>(json['completedAt']),
-      count: serializer.fromJson<int>(json['count']),
+      value: serializer.fromJson<double>(json['value']),
       note: serializer.fromJson<String?>(json['note']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
@@ -1382,7 +1471,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
       'habitId': serializer.toJson<int>(habitId),
       'userId': serializer.toJson<String>(userId),
       'completedAt': serializer.toJson<DateTime>(completedAt),
-      'count': serializer.toJson<int>(count),
+      'value': serializer.toJson<double>(value),
       'note': serializer.toJson<String?>(note),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
@@ -1396,7 +1485,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
     int? habitId,
     String? userId,
     DateTime? completedAt,
-    int? count,
+    double? value,
     Value<String?> note = const Value.absent(),
     DateTime? updatedAt,
     bool? isSynced,
@@ -1407,7 +1496,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
     habitId: habitId ?? this.habitId,
     userId: userId ?? this.userId,
     completedAt: completedAt ?? this.completedAt,
-    count: count ?? this.count,
+    value: value ?? this.value,
     note: note.present ? note.value : this.note,
     updatedAt: updatedAt ?? this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
@@ -1424,7 +1513,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
       completedAt: data.completedAt.present
           ? data.completedAt.value
           : this.completedAt,
-      count: data.count.present ? data.count.value : this.count,
+      value: data.value.present ? data.value.value : this.value,
       note: data.note.present ? data.note.value : this.note,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
@@ -1442,7 +1531,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
           ..write('habitId: $habitId, ')
           ..write('userId: $userId, ')
           ..write('completedAt: $completedAt, ')
-          ..write('count: $count, ')
+          ..write('value: $value, ')
           ..write('note: $note, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -1458,7 +1547,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
     habitId,
     userId,
     completedAt,
-    count,
+    value,
     note,
     updatedAt,
     isSynced,
@@ -1473,7 +1562,7 @@ class HabitCompletion extends DataClass implements Insertable<HabitCompletion> {
           other.habitId == this.habitId &&
           other.userId == this.userId &&
           other.completedAt == this.completedAt &&
-          other.count == this.count &&
+          other.value == this.value &&
           other.note == this.note &&
           other.updatedAt == this.updatedAt &&
           other.isSynced == this.isSynced &&
@@ -1486,7 +1575,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
   final Value<int> habitId;
   final Value<String> userId;
   final Value<DateTime> completedAt;
-  final Value<int> count;
+  final Value<double> value;
   final Value<String?> note;
   final Value<DateTime> updatedAt;
   final Value<bool> isSynced;
@@ -1497,7 +1586,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
     this.habitId = const Value.absent(),
     this.userId = const Value.absent(),
     this.completedAt = const Value.absent(),
-    this.count = const Value.absent(),
+    this.value = const Value.absent(),
     this.note = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
@@ -1509,7 +1598,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
     required int habitId,
     required String userId,
     required DateTime completedAt,
-    this.count = const Value.absent(),
+    this.value = const Value.absent(),
     this.note = const Value.absent(),
     required DateTime updatedAt,
     this.isSynced = const Value.absent(),
@@ -1524,7 +1613,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
     Expression<int>? habitId,
     Expression<String>? userId,
     Expression<DateTime>? completedAt,
-    Expression<int>? count,
+    Expression<double>? value,
     Expression<String>? note,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
@@ -1536,7 +1625,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
       if (habitId != null) 'habit_id': habitId,
       if (userId != null) 'user_id': userId,
       if (completedAt != null) 'completed_at': completedAt,
-      if (count != null) 'count': count,
+      if (value != null) 'value': value,
       if (note != null) 'note': note,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
@@ -1550,7 +1639,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
     Value<int>? habitId,
     Value<String>? userId,
     Value<DateTime>? completedAt,
-    Value<int>? count,
+    Value<double>? value,
     Value<String?>? note,
     Value<DateTime>? updatedAt,
     Value<bool>? isSynced,
@@ -1562,7 +1651,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
       habitId: habitId ?? this.habitId,
       userId: userId ?? this.userId,
       completedAt: completedAt ?? this.completedAt,
-      count: count ?? this.count,
+      value: value ?? this.value,
       note: note ?? this.note,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
@@ -1588,8 +1677,8 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
     if (completedAt.present) {
       map['completed_at'] = Variable<DateTime>(completedAt.value);
     }
-    if (count.present) {
-      map['count'] = Variable<int>(count.value);
+    if (value.present) {
+      map['value'] = Variable<double>(value.value);
     }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
@@ -1614,7 +1703,7 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
           ..write('habitId: $habitId, ')
           ..write('userId: $userId, ')
           ..write('completedAt: $completedAt, ')
-          ..write('count: $count, ')
+          ..write('value: $value, ')
           ..write('note: $note, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
@@ -1652,7 +1741,9 @@ typedef $$HabitsTableCreateCompanionBuilder =
       required String icon,
       Value<String> frequencyType,
       Value<String?> frequencyDays,
-      Value<int> targetCount,
+      Value<double> targetValue,
+      Value<String> unit,
+      Value<String?> type,
       required DateTime startDate,
       Value<DateTime?> endDate,
       Value<int?> habitTime,
@@ -1673,7 +1764,9 @@ typedef $$HabitsTableUpdateCompanionBuilder =
       Value<String> icon,
       Value<String> frequencyType,
       Value<String?> frequencyDays,
-      Value<int> targetCount,
+      Value<double> targetValue,
+      Value<String> unit,
+      Value<String?> type,
       Value<DateTime> startDate,
       Value<DateTime?> endDate,
       Value<int?> habitTime,
@@ -1763,8 +1856,18 @@ class $$HabitsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get targetCount => $composableBuilder(
-    column: $table.targetCount,
+  ColumnFilters<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1888,8 +1991,18 @@ class $$HabitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get targetCount => $composableBuilder(
-    column: $table.targetCount,
+  ColumnOrderings<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get unit => $composableBuilder(
+    column: $table.unit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -1976,10 +2089,16 @@ class $$HabitsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get targetCount => $composableBuilder(
-    column: $table.targetCount,
+  GeneratedColumn<double> get targetValue => $composableBuilder(
+    column: $table.targetValue,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get unit =>
+      $composableBuilder(column: $table.unit, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
@@ -2074,7 +2193,9 @@ class $$HabitsTableTableManager
                 Value<String> icon = const Value.absent(),
                 Value<String> frequencyType = const Value.absent(),
                 Value<String?> frequencyDays = const Value.absent(),
-                Value<int> targetCount = const Value.absent(),
+                Value<double> targetValue = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String?> type = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<int?> habitTime = const Value.absent(),
@@ -2093,7 +2214,9 @@ class $$HabitsTableTableManager
                 icon: icon,
                 frequencyType: frequencyType,
                 frequencyDays: frequencyDays,
-                targetCount: targetCount,
+                targetValue: targetValue,
+                unit: unit,
+                type: type,
                 startDate: startDate,
                 endDate: endDate,
                 habitTime: habitTime,
@@ -2114,7 +2237,9 @@ class $$HabitsTableTableManager
                 required String icon,
                 Value<String> frequencyType = const Value.absent(),
                 Value<String?> frequencyDays = const Value.absent(),
-                Value<int> targetCount = const Value.absent(),
+                Value<double> targetValue = const Value.absent(),
+                Value<String> unit = const Value.absent(),
+                Value<String?> type = const Value.absent(),
                 required DateTime startDate,
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<int?> habitTime = const Value.absent(),
@@ -2133,7 +2258,9 @@ class $$HabitsTableTableManager
                 icon: icon,
                 frequencyType: frequencyType,
                 frequencyDays: frequencyDays,
-                targetCount: targetCount,
+                targetValue: targetValue,
+                unit: unit,
+                type: type,
                 startDate: startDate,
                 endDate: endDate,
                 habitTime: habitTime,
@@ -2205,7 +2332,7 @@ typedef $$HabitCompletionsTableCreateCompanionBuilder =
       required int habitId,
       required String userId,
       required DateTime completedAt,
-      Value<int> count,
+      Value<double> value,
       Value<String?> note,
       required DateTime updatedAt,
       Value<bool> isSynced,
@@ -2218,7 +2345,7 @@ typedef $$HabitCompletionsTableUpdateCompanionBuilder =
       Value<int> habitId,
       Value<String> userId,
       Value<DateTime> completedAt,
-      Value<int> count,
+      Value<double> value,
       Value<String?> note,
       Value<DateTime> updatedAt,
       Value<bool> isSynced,
@@ -2282,8 +2409,8 @@ class $$HabitCompletionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get count => $composableBuilder(
-    column: $table.count,
+  ColumnFilters<double> get value => $composableBuilder(
+    column: $table.value,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2360,8 +2487,8 @@ class $$HabitCompletionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get count => $composableBuilder(
-    column: $table.count,
+  ColumnOrderings<double> get value => $composableBuilder(
+    column: $table.value,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2432,8 +2559,8 @@ class $$HabitCompletionsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get count =>
-      $composableBuilder(column: $table.count, builder: (column) => column);
+  GeneratedColumn<double> get value =>
+      $composableBuilder(column: $table.value, builder: (column) => column);
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
@@ -2508,7 +2635,7 @@ class $$HabitCompletionsTableTableManager
                 Value<int> habitId = const Value.absent(),
                 Value<String> userId = const Value.absent(),
                 Value<DateTime> completedAt = const Value.absent(),
-                Value<int> count = const Value.absent(),
+                Value<double> value = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
@@ -2519,7 +2646,7 @@ class $$HabitCompletionsTableTableManager
                 habitId: habitId,
                 userId: userId,
                 completedAt: completedAt,
-                count: count,
+                value: value,
                 note: note,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
@@ -2532,7 +2659,7 @@ class $$HabitCompletionsTableTableManager
                 required int habitId,
                 required String userId,
                 required DateTime completedAt,
-                Value<int> count = const Value.absent(),
+                Value<double> value = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 required DateTime updatedAt,
                 Value<bool> isSynced = const Value.absent(),
@@ -2543,7 +2670,7 @@ class $$HabitCompletionsTableTableManager
                 habitId: habitId,
                 userId: userId,
                 completedAt: completedAt,
-                count: count,
+                value: value,
                 note: note,
                 updatedAt: updatedAt,
                 isSynced: isSynced,

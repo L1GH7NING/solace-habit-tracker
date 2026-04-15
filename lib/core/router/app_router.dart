@@ -89,7 +89,6 @@ class AppRouter {
   );
 }
 
-// ── Shell — built once, never torn down on tab switch ─────────────────────────
 class _AppShell extends StatelessWidget {
   final Widget child;
   const _AppShell({required this.child});
@@ -99,18 +98,16 @@ class _AppShell extends StatelessWidget {
     final user = context.watch<UserProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          child,
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: BottomNav(isGuest: user.isGuest),
-          ),
-        ],
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      // 1. Remove the bottom padding injected by bottomNavigationBar
+      // This tells inner pages to draw underneath the floating pill.
+      body: MediaQuery.removePadding(
+        context: context,
+        removeBottom: true,
+        child: child,
       ),
+      bottomNavigationBar: BottomNav(isGuest: user.isGuest),
     );
   }
 }

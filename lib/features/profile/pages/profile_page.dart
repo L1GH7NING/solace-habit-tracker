@@ -1,38 +1,13 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:zenith_habit_tracker/core/providers/theme_provider.dart';
 import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
-import 'package:zenith_habit_tracker/core/theme/app_colors.dart';
+// import 'package:zenith_habit_tracker/core/theme/app_colors.dart'; // No longer needed
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
 import 'package:zenith_habit_tracker/features/profile/services/profile_service.dart';
-
-const _avatarOptions = [
-  '🧑',
-  '👩',
-  '🧔',
-  '👱',
-  '🧕',
-  '👴',
-  '👵',
-  '🧒',
-  '🦊',
-  '🐻',
-  '🐼',
-  '🐨',
-  '🐯',
-  '🦁',
-  '🐸',
-  '🐙',
-  '🌟',
-  '🔥',
-  '🌈',
-  '🎯',
-  '🚀',
-  '🎨',
-  '🎸',
-  '⚡',
-];
+import 'package:zenith_habit_tracker/features/profile/widgets/avatar_picker.dart';
+import 'package:zenith_habit_tracker/features/profile/widgets/avatar_section.dart';
+import 'package:zenith_habit_tracker/features/profile/widgets/guest_banner.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -42,22 +17,21 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _selectedAvatar = '🧑';
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final user = context.watch<UserProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final profileService = ProfileService(context: context, user: user);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: theme.scaffoldBackgroundColor, // 🎨 THEME
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        toolbarHeight: 70, // increases vertical space
+        toolbarHeight: 70,
         title: Text(
           'Edit Profile',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.headlineMedium?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
@@ -75,7 +49,7 @@ class _ProfilePageState extends State<ProfilePage> {
             top: 120,
             left: -80,
             child: BlurCircle(
-              color: AppColors.primary.withOpacity(0.08),
+              color: theme.colorScheme.primary.withOpacity(0.08), // 🎨 THEME
               size: 260,
             ),
           ),
@@ -83,7 +57,7 @@ class _ProfilePageState extends State<ProfilePage> {
             bottom: 120,
             right: -80,
             child: BlurCircle(
-              color: AppColors.secondary.withOpacity(0.12),
+              color: theme.colorScheme.secondary.withOpacity(0.12), // 🎨 THEME
               size: 300,
             ),
           ),
@@ -100,10 +74,12 @@ class _ProfilePageState extends State<ProfilePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // ── Avatar ───────────────────────────────────────
-                        _AvatarSection(
-                          selectedAvatar: _selectedAvatar,
-                          onTap: () =>
-                              _showAvatarPicker(context, profileService),
+                        AvatarSection(
+                          selectedAvatar: user.avatar ?? user.initial,
+                          onTap: () => showAvatarPicker(
+                            context,
+                            service: profileService,
+                          ),
                         ),
 
                         const SizedBox(height: 10),
@@ -120,9 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Center(
                           child: Text(
                             user.isGuest ? 'Browsing as guest' : user.email,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
+                            style: theme.textTheme.bodyMedium,
                           ),
                         ),
 
@@ -130,12 +104,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         // ── Guest Banner ─────────────────────────────────
                         if (user.isGuest) ...[
-                          _GuestBanner(),
+                          GuestBanner(theme: theme),
                           const SizedBox(height: 24),
                         ],
 
                         // ── General (always visible) ─────────────────────
-                        _SectionLabel(label: 'General'),
+                        const _SectionLabel(label: 'General'),
                         const SizedBox(height: 10),
                         _Section(
                           children: [
@@ -144,13 +118,29 @@ class _ProfilePageState extends State<ProfilePage> {
                               value: user.name,
                               onTap: profileService.changeUsername,
                             ),
+                            const _Divider(),
+                            _ThemeToggleTile(
+                              isDark:
+                                  themeProvider.themeMode == ThemeMode.dark ||
+                                  (themeProvider.themeMode ==
+                                          ThemeMode.system &&
+                                      MediaQuery.of(
+                                            context,
+                                          ).platformBrightness ==
+                                          Brightness.dark),
+                              onChanged: (isDark) {
+                                context.read<ThemeProvider>().toggleTheme(
+                                  isDark,
+                                );
+                              },
+                            ),
                           ],
                         ),
 
                         // ── Private Info (logged in only) ─────────────────
                         if (!user.isGuest) ...[
                           const SizedBox(height: 24),
-                          _SectionLabel(label: 'Private Information'),
+                          const _SectionLabel(label: 'Private Information'),
                           const SizedBox(height: 10),
                           _Section(
                             children: [
@@ -169,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
 
                           const SizedBox(height: 24),
-                          _SectionLabel(label: 'Account'),
+                          const _SectionLabel(label: 'Account'),
                           const SizedBox(height: 10),
                           _Section(
                             children: [
@@ -177,14 +167,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                 label: 'Logout',
                                 value: '',
                                 onTap: profileService.logout,
-                                labelColor: Theme.of(context).colorScheme.error,
+                                labelColor: theme.colorScheme.error,
                               ),
                               const _Divider(),
                               _InfoTile(
                                 label: 'Delete Account',
                                 value: '',
                                 onTap: profileService.deleteAccount,
-                                labelColor: Theme.of(context).colorScheme.error,
+                                labelColor: theme.colorScheme.error,
                               ),
                             ],
                           ),
@@ -200,244 +190,6 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
   }
-
-  // ── Avatar picker sheet ────────────────────────────────────────────────────
-  void _showAvatarPicker(BuildContext context, ProfileService service) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.textSecondary.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(99),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Choose Avatar',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 6,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: _avatarOptions.length,
-              itemBuilder: (_, i) {
-                final emoji = _avatarOptions[i];
-                final isSelected = emoji == _selectedAvatar;
-                return GestureDetector(
-                  onTap: () {
-                    service.onAvatarSelected(
-                      emoji,
-                      () => setState(() => _selectedAvatar = emoji),
-                    );
-                    Navigator.pop(ctx);
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primary.withOpacity(0.1)
-                          : AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(emoji, style: const TextStyle(fontSize: 26)),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Private UI-only sub-widgets
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _AppBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 80, // controls vertical position area
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Align(
-          alignment: Alignment(0, 0.3), // push slightly downward
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Edit Profile',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 48),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AvatarSection extends StatelessWidget {
-  final String selectedAvatar;
-  final VoidCallback onTap;
-
-  const _AvatarSection({required this.selectedAvatar, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.secondaryContainer,
-                border: Border.all(
-                  color: AppColors.primary.withOpacity(0.2),
-                  width: 2,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(selectedAvatar, style: const TextStyle(fontSize: 48)),
-            ),
-            Positioned(
-              bottom: 2,
-              right: 2,
-              child: Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.background, width: 2),
-                ),
-                child: const Icon(
-                  Icons.camera_alt_rounded,
-                  size: 14,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GuestBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/signup'),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.primary, AppColors.secondary],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            const Text('🔒', style: TextStyle(fontSize: 32)),
-            const SizedBox(height: 10),
-            const Text(
-              'You\'re not signed in',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                letterSpacing: -0.3,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Sign in for the best experience — sync your habits, track streaks, and never lose your progress.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 18),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(40),
-              ),
-              child: const Text(
-                'Sign In for Best Experience',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _SectionLabel extends StatelessWidget {
@@ -446,13 +198,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 🎨 THEME: No need to override color, headlineMedium already has the correct one
     return Text(
       label,
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
         fontSize: 17,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.3,
-        color: AppColors.textPrimary,
       ),
     );
   }
@@ -464,13 +216,14 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: theme.cardTheme.color, // 🎨 THEME
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: theme.shadowColor.withOpacity(0.04), // 🎨 THEME
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -496,6 +249,7 @@ class _InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
@@ -508,17 +262,19 @@ class _InfoTile extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: labelColor ?? AppColors.textSecondary,
+                color:
+                    labelColor ??
+                    theme.colorScheme.onSurfaceVariant, // 🎨 THEME
               ),
             ),
             const Spacer(),
             if (value.isNotEmpty)
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: theme.colorScheme.onSurface, // 🎨 THEME
                 ),
               ),
             if (onTap != null) ...[
@@ -526,7 +282,9 @@ class _InfoTile extends StatelessWidget {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 13,
-                color: AppColors.textSecondary.withOpacity(0.5),
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                  0.5,
+                ), // 🎨 THEME
               ),
             ],
           ],
@@ -541,11 +299,42 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(
+    return Divider(
       height: 1,
-      indent: 18,
-      endIndent: 18,
-      color: Color(0xFFEEEEF2),
+      color: Theme.of(context).colorScheme.surfaceVariant, // 🎨 THEME
+    );
+  }
+}
+
+class _ThemeToggleTile extends StatelessWidget {
+  final bool isDark;
+  final ValueChanged<bool> onChanged;
+
+  const _ThemeToggleTile({required this.isDark, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      child: Row(
+        children: [
+          Text(
+            'Dark Mode',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Spacer(),
+          Switch(
+            value: isDark,
+            onChanged: onChanged,
+            activeColor: theme.colorScheme.primary,
+          ),
+        ],
+      ),
     );
   }
 }

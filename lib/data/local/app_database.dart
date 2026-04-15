@@ -21,7 +21,9 @@ class Habits extends Table {
           .withDefault(const Constant('DAILY'))();
   TextColumn get frequencyDays =>
       text().nullable()(); // JSON e.g. '["MON","WED"]'
-  IntColumn get targetCount => integer().withDefault(const Constant(1))();
+  RealColumn get targetValue => real().withDefault(const Constant(1))();
+  TextColumn get unit => text().withDefault(const Constant('times'))();
+  TextColumn get type => text().nullable()();
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime().nullable()();
   IntColumn get habitTime => integer().nullable()();
@@ -39,7 +41,7 @@ class HabitCompletions extends Table {
   IntColumn get habitId => integer().references(Habits, #id)();
   TextColumn get userId => text()();
   DateTimeColumn get completedAt => dateTime()();
-  IntColumn get count => integer().withDefault(const Constant(1))();
+  RealColumn get value => real().withDefault(const Constant(1))();
   TextColumn get note => text().nullable()();
   DateTimeColumn get updatedAt => dateTime()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
@@ -53,20 +55,35 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
-      if (from < 2) {
+      if (from < 3) {
+        // Add new columns
         await migrator.addColumn(
           habits,
-          habits.habitTime as GeneratedColumn<Object>,
+          habits.targetValue as GeneratedColumn<Object>,
         );
         await migrator.addColumn(
           habits,
-          habits.reminderTime as GeneratedColumn<Object>,
+          habits.unit as GeneratedColumn<Object>,
         );
+
+        await migrator.addColumn(
+          habitCompletions,
+          habitCompletions.value as GeneratedColumn<Object>,
+        );
+
+        // OPTIONAL: migrate old data
+        await customStatement('''
+        UPDATE habits SET target_value = target_count
+      ''');
+
+        await customStatement('''
+        UPDATE habit_completions SET value = count
+      ''');
       }
     },
   );
@@ -110,6 +127,10 @@ class AppDatabase extends _$AppDatabase {
               c.completedAt.isSmallerThanValue(end),
         ))
         .watch();
+  }
+
+  bool isCompleted(double progress, double target) {
+    return progress >= target;
   }
 
   Future<int> insertCompletion(HabitCompletionsCompanion completion) =>

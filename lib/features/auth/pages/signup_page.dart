@@ -1,10 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:provider/provider.dart';
-import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import '../services/auth_service.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -33,30 +31,8 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  // ✅ Show snackbar then route based on whether name is already set
   void _showSuccessAndNavigate() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: Colors.green.shade700,
-        content: Row(
-          children: const [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              "Success! Welcome 🎉",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+      showAppSnackBar(context, 'Account created successfully!', type: SnackBarType.success);
 
     Future.delayed(const Duration(seconds: 1), () async {
       if (!mounted) return;
@@ -135,7 +111,7 @@ class _SignUpPageState extends State<SignUpPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           Positioned(
@@ -375,18 +351,6 @@ class _SignUpPageState extends State<SignUpPage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_buttonRadius),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-          BoxShadow(
-            color: theme.colorScheme.onSurface.withOpacity(0.04),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
       ),
       child: OutlinedButton(
         onPressed: _isGoogleLoading ? null : _signInWithGoogle,

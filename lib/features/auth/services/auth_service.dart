@@ -149,6 +149,25 @@ class AuthService {
         return "Something went wrong. Please try again.";
     }
   }
+
+  static Future<void> saveAvatar(String emoji) async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = _auth.currentUser;
+
+    // Use the UID for a logged-in user, or a static key for a guest.
+    final key = user != null ? 'avatar_${user.uid}' : 'avatar_guest';
+    await prefs.setString(key, emoji);
+  }
+
+  
+  static Future<String?> getAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = _auth.currentUser;
+
+    final key = user != null ? 'avatar_${user.uid}' : 'avatar_guest';
+    return prefs.getString(key);
+  }
+
 }
 
 // ── Result type ──────────────────────────────────────────────────────────────

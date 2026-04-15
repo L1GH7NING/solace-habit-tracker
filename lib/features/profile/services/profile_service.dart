@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/dialog_box.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 
 class ProfileService {
   final BuildContext context;
@@ -10,114 +12,104 @@ class ProfileService {
 
   // ── Avatar ────────────────────────────────────────────────────────────────
 
-  /// Called when user selects an avatar emoji from the picker.
-  void onAvatarSelected(String emoji, VoidCallback updateState) {
-    updateState();
-    // TODO: persist avatar choice to SharedPreferences or Firestore
+  void onAvatarSelected(String emoji, VoidCallback onDone) async {
+    user.setAvatar(emoji);
+    onDone();
   }
 
   // ── Username ──────────────────────────────────────────────────────────────
 
   Future<void> changeUsername() async {
-    final nameController = TextEditingController(text: user.name);
+    final controller = TextEditingController(text: user.name);
 
-    final result = await showDialog<String>(
+    final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Change Username',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-            color: Color(0xFF1C1C1E),
-          ),
-        ),
+      builder: (_) => DialogBox(
+        title: 'Change Username',
+        confirmText: 'Save',
         content: TextField(
-          controller: nameController,
+          controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
-          decoration:
-              const InputDecoration(hintText: 'Enter new username'),
+          decoration: InputDecoration(
+            hintText: 'Enter new username',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () =>
-                Navigator.pop(ctx, nameController.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
+        onConfirm: () async {
+          final value = controller.text.trim();
+          if (value.isNotEmpty) {
+            await user.updateName(value);
+          }
+        },
       ),
     );
 
-    if (result != null && result.isNotEmpty) {
-      await user.updateName(result);
-      if (context.mounted) _showSuccessSnackbar('Username updated!');
+    if (confirmed == true && context.mounted) {
+      showAppSnackBar(
+        context,
+        'Username updated successfully!',
+        type: SnackBarType.success,
+      );
     }
   }
 
   // ── Password ──────────────────────────────────────────────────────────────
 
   void changePassword() {
-    _showComingSoonSnackbar('Change password');
+    showAppSnackBar(context, 'Change password feature coming soon!');
   }
 
   // ── Delete Account ────────────────────────────────────────────────────────
 
   Future<void> deleteAccount() async {
-    final theme = Theme.of(context);
-
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Delete Account',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: Color(0xFF1C1C1E),
-          ),
-        ),
+      builder: (_) => DialogBox(
+        title: 'Delete Account',
+        confirmText: 'Delete',
+        isDestructive: true,
         content: const Text(
           'This action is permanent and cannot be undone. All your data will be lost.',
-          style: TextStyle(color: Color(0xFF78767C)),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
+        onConfirm: () async {
+          // do nothing OR your delete logic here
+        },
       ),
     );
 
     if (confirmed == true && context.mounted) {
-      // TODO: implement actual account deletion via Firebase
-      _showComingSoonSnackbar('Account deletion');
+      showAppSnackBar(context, "Delete account feature coming soon!");
     }
   }
 
   // ── Logout ────────────────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    await user.logout();
-    if (context.mounted) context.go('/login');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => DialogBox(
+        title: 'Logout',
+        confirmText: 'Logout',
+        isDestructive: true,
+        content: const Text('Are you sure you want to logout?'),
+        onConfirm: () async {
+          await user.logout();
+        },
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      showAppSnackBar(
+        context,
+        "Logged out successfully!",
+        type: SnackBarType.success,
+      );
+      context.go('/login');
+    }
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
@@ -127,8 +119,11 @@ class ProfileService {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 18),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 10),
             Text(
               message,
@@ -142,15 +137,14 @@ class ProfileService {
         backgroundColor: Colors.green.shade700,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
     );
   }
 
   void _showComingSoonSnackbar(String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$feature coming soon')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$feature coming soon')));
   }
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/habit_controller_base.dart';
 import 'habit_constants.dart';
@@ -5,7 +7,7 @@ import 'shared_habit_widgets.dart';
 
 void showAppearancePicker(
   BuildContext context, {
-  required HabitControllerBase controller, // ✅ accepts both Create & Edit
+  required HabitControllerBase controller,
   required VoidCallback onUpdate,
 }) {
   final theme = Theme.of(context);
@@ -17,24 +19,19 @@ void showAppearancePicker(
     builder: (ctx) {
       return StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
-          final bottomPadding = MediaQuery.of(context).padding.bottom;
           final accentColor = Color(controller.selectedColor);
 
           return Container(
             constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(context).size.height * 0.85,
+              maxHeight: MediaQuery.of(context).size.height * 0.625,
             ),
             decoration: BoxDecoration(
               color: theme.colorScheme.background,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
             ),
-            padding: EdgeInsets.fromLTRB(
-              20,
-              12,
-              20,
-              bottomPadding > 0 ? bottomPadding : 20,
-            ),
+            padding: EdgeInsets.fromLTRB(20, 12, 20, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,8 +42,9 @@ void showAppearancePicker(
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withOpacity(0.2),
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                        0.2,
+                      ),
                       borderRadius: BorderRadius.circular(99),
                     ),
                   ),
@@ -78,7 +76,7 @@ void showAppearancePicker(
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
+                          color: Colors.transparent,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
@@ -115,7 +113,7 @@ void showAppearancePicker(
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: colorOptions.length,
-                            separatorBuilder: (_, __) =>
+                            separatorBuilder: (_, _) =>
                                 const SizedBox(width: 10),
                             itemBuilder: (_, i) {
                               final opt = colorOptions[i];
@@ -123,13 +121,13 @@ void showAppearancePicker(
                                   controller.selectedColor == opt.value;
                               return GestureDetector(
                                 onTap: () {
-                                  setModalState(() =>
-                                      controller.selectedColor = opt.value);
+                                  setModalState(
+                                    () => controller.selectedColor = opt.value,
+                                  );
                                   onUpdate();
                                 },
                                 child: AnimatedContainer(
-                                  duration:
-                                      const Duration(milliseconds: 180),
+                                  duration: const Duration(milliseconds: 180),
                                   width: 38,
                                   height: 38,
                                   decoration: BoxDecoration(
@@ -138,15 +136,16 @@ void showAppearancePicker(
                                     border: Border.all(
                                       color: isSelected
                                           ? theme.colorScheme.onSurface
-                                              .withOpacity(0.4)
+                                                .withOpacity(0.4)
                                           : Colors.transparent,
                                       width: 2.5,
                                     ),
                                     boxShadow: isSelected
                                         ? [
                                             BoxShadow(
-                                              color: Color(opt.value)
-                                                  .withOpacity(0.4),
+                                              color: Color(
+                                                opt.value,
+                                              ).withOpacity(0.4),
                                               blurRadius: 8,
                                               offset: const Offset(0, 3),
                                             ),
@@ -154,8 +153,11 @@ void showAppearancePicker(
                                         : [],
                                   ),
                                   child: isSelected
-                                      ? const Icon(Icons.check_rounded,
-                                          color: Colors.white, size: 20)
+                                      ? const Icon(
+                                          Icons.check_rounded,
+                                          color: Colors.white,
+                                          size: 20,
+                                        )
                                       : null,
                                 ),
                               );
@@ -173,10 +175,10 @@ void showAppearancePicker(
                           physics: const NeverScrollableScrollPhysics(),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 6,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                          ),
+                                crossAxisCount: 6,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                              ),
                           itemCount: iconOptions.length,
                           itemBuilder: (_, i) {
                             final opt = iconOptions[i];
@@ -185,8 +187,9 @@ void showAppearancePicker(
 
                             return GestureDetector(
                               onTap: () {
-                                setModalState(() =>
-                                    controller.selectedIcon = opt.id);
+                                setModalState(
+                                  () => controller.selectedIcon = opt.id,
+                                );
                                 onUpdate();
                               },
                               child: AnimatedContainer(
@@ -209,15 +212,13 @@ void showAppearancePicker(
                                   size: 22,
                                   color: isSelected
                                       ? accentColor
-                                      : theme.colorScheme.onSurfaceVariant
-                                          .withOpacity(0.6),
+                                      : theme.colorScheme.onSurface,
                                 ),
                               ),
                             );
                           },
                         ),
-
-                        const SizedBox(height: 20),
+                        SizedBox(height: 70),
                       ],
                     ),
                   ),

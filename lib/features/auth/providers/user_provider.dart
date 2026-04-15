@@ -6,22 +6,24 @@ import 'package:firebase_auth/firebase_auth.dart';
 class UserProvider extends ChangeNotifier {
   String _name = '';
   bool _isGuest = true;
+  String? _avatar;
 
   String get name => _name;
   bool get isGuest => _isGuest;
+  String? get avatar => _avatar;
 
-  String get initial =>
-      _name.isNotEmpty ? _name[0].toUpperCase() : '?';
+  String get initial => _name.isNotEmpty ? _name[0].toUpperCase() : '?';
 
   String get email => FirebaseAuth.instance.currentUser?.email ?? '';
 
   UserProvider() {
-    _init(); // 🔥 auto start listening
+    _init();
   }
 
   void _init() {
     AuthService.authStateChanges.listen((User? user) async {
       final prefs = await SharedPreferences.getInstance();
+      _avatar = await AuthService.getAvatar();
 
       if (user != null) {
         _isGuest = false;
@@ -33,6 +35,12 @@ class UserProvider extends ChangeNotifier {
 
       notifyListeners(); // 🔥 auto update UI everywhere
     });
+  }
+
+  void setAvatar(String? newAvatar) {
+    _avatar = newAvatar; 
+    AuthService.saveAvatar(newAvatar ?? '');
+    notifyListeners();
   }
 
   // 🔥 Update name globally

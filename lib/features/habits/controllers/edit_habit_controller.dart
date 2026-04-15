@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:zenith_habit_tracker/features/common/widgets/dialog_box.dart';
+import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/habit_controller_base.dart';
 
 class EditHabitController implements HabitControllerBase {
   final BuildContext context;
   final AppDatabase db;
-  final Habit habit; // the existing habit being edited
+  final Habit habit;
 
   late final TextEditingController titleController;
   late final TextEditingController descriptionController;
@@ -16,7 +18,14 @@ class EditHabitController implements HabitControllerBase {
   late String selectedIcon;
   late String frequencyType;
   late List<String> frequencyDays;
-  late int targetCount;
+
+  // ✅ CACHE: Stores the specific days so they aren't lost when toggling to Weekly
+  late List<String> _cachedDailyDays;
+
+  // ✅ New schema — double value + string unit
+  late double targetValue;
+  late String unit;
+
   @override
   late int selectedColor;
 
@@ -25,17 +34,26 @@ class EditHabitController implements HabitControllerBase {
     required this.db,
     required this.habit,
   }) {
-    // Pre-populate all fields from the existing habit
     titleController = TextEditingController(text: habit.title);
     descriptionController = TextEditingController(
       text: habit.description ?? '',
     );
     selectedIcon = habit.icon;
     frequencyType = habit.frequencyType;
+
+    // Load existing days
     frequencyDays = habit.frequencyDays != null
         ? habit.frequencyDays!.split(',').where((s) => s.isNotEmpty).toList()
         : [];
-    targetCount = habit.targetCount;
+
+    if (frequencyDays.isNotEmpty) {
+      _cachedDailyDays = List.from(frequencyDays);
+    } else {
+      _cachedDailyDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+    }
+
+    targetValue = habit.targetValue;
+    unit = habit.unit;
     selectedColor = habit.color;
   }
 
@@ -44,97 +62,44 @@ class EditHabitController implements HabitControllerBase {
     descriptionController.dispose();
   }
 
-  // ── Save (update) ─────────────────────────────────────────────────────────
-
-  Future<void> saveHabit({int? habitTime, int? reminderTime}) async {
-    final title = titleController.text.trim();
-
-    if (title.isEmpty) {
-      _showError('Please enter a habit name.');
-      return;
-    }
-
-    await db.updateHabit(
-      HabitsCompanion(
-        userId: Value(habit.userId),
-        id: Value(habit.id),
-        title: Value(title),
-        description: Value(
-          descriptionController.text.trim().isEmpty
-              ? null
-              : descriptionController.text.trim(),
-        ),
-        startDate: Value(habit.startDate),
-        icon: Value(selectedIcon),
-        color: Value(selectedColor),
-        frequencyType: Value(frequencyType),
-        frequencyDays: Value(
-          frequencyDays.isEmpty ? null : frequencyDays.join(','),
-        ),
-        targetCount: Value(targetCount),
-        habitTime: Value(habitTime),
-        reminderTime: Value(reminderTime),
-        updatedAt: Value(DateTime.now()),
-        isSynced: const Value(false),
-        pendingOperation: const Value('UPDATE'),
-      ),
-    );
-
-    if (context.mounted) context.pop();
-  }
-
-  // ── Delete ────────────────────────────────────────────────────────────────
-
-  Future<void> deleteHabit() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(ctx).colorScheme.surface,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Delete Habit',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${habit.title}"? This cannot be undone.',
-          style: TextStyle(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      await db.archiveHabit(habit.id);
-      if (context.mounted) context.pop();
+  String get _habitType {
+    switch (unit) {
+      case 'times':
+        return 'count';
+      case 'minutes':
+      case 'hours':
+        return 'duration';
+      default:
+        return 'quantity';
     }
   }
 
-  // ── Increment / Decrement ─────────────────────────────────────────────────
+  int get targetCount => targetValue.toInt();
 
   void incrementTarget() {
-    if (targetCount < 99) targetCount++;
+    if (targetValue < 99) targetValue++;
   }
 
   void decrementTarget() {
-    if (targetCount > 1) targetCount--;
+    if (targetValue > 1) targetValue--;
   }
 
+  // ── Frequency ─────────────────────────────────────────────────────────────
   void setFrequency(String type) {
+    // ✅ If we are moving AWAY from DAILY, save the current specific days to memory
+    if (frequencyType == 'DAILY' && type != 'DAILY') {
+      _cachedDailyDays = List.from(frequencyDays);
+    }
+
     frequencyType = type;
-    if (type != 'WEEKLY') frequencyDays = [];
+
+    if (type == 'DAILY') {
+      // ✅ Restore the cached days when returning to DAILY
+      frequencyDays = List.from(_cachedDailyDays);
+    } else {
+      // ✅ Clear the active days for Weekly so we don't accidentally save them to DB
+      frequencyDays = [];
+    }
   }
 
   void toggleFrequencyDay(String day) {
@@ -143,35 +108,106 @@ class EditHabitController implements HabitControllerBase {
     } else {
       frequencyDays.add(day);
     }
+    // Keep cache completely in sync as they tap
+    _cachedDailyDays = List.from(frequencyDays);
   }
 
-  // ── Snackbars ─────────────────────────────────────────────────────────────
+  // ── Save (update) ─────────────────────────────────────────────────────────
+  Future<bool> saveHabit({int? habitTime, int? reminderTime}) async {
+    final title = titleController.text.trim();
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+    if (title.isEmpty) {
+      _showError('Please enter a habit name.');
+      return false;
+    }
+
+    if (targetValue <= 0) {
+      _showError('Goal must be greater than zero.');
+      return false;
+    }
+
+    final hasChanged =
+        title != habit.title ||
+        (descriptionController.text.trim().isEmpty
+                ? null
+                : descriptionController.text.trim()) !=
+            habit.description ||
+        selectedIcon != habit.icon ||
+        selectedColor != habit.color ||
+        frequencyType != habit.frequencyType ||
+        (frequencyDays.isEmpty ? null : frequencyDays.join(',')) !=
+            habit.frequencyDays ||
+        targetValue != habit.targetValue ||
+        unit != habit.unit ||
+        habitTime != habit.habitTime ||
+        reminderTime != habit.reminderTime;
+
+    if (!hasChanged) {
+      _showError('No changes made.');
+      return false;
+    }
+
+    try {
+      await db.updateHabit(
+        HabitsCompanion(
+          id: Value(habit.id),
+          userId: Value(habit.userId),
+          title: Value(title),
+          description: Value(
+            descriptionController.text.trim().isEmpty
+                ? null
+                : descriptionController.text.trim(),
+          ),
+          startDate: Value(habit.startDate),
+          icon: Value(selectedIcon),
+          color: Value(selectedColor),
+          frequencyType: Value(frequencyType),
+          frequencyDays: Value(
+            frequencyDays.isEmpty ? null : frequencyDays.join(','),
+          ),
+          targetValue: Value(targetValue),
+          unit: Value(unit),
+          type: Value(_habitType),
+          habitTime: Value(habitTime),
+          reminderTime: Value(reminderTime),
+          updatedAt: Value(DateTime.now()),
+          isSynced: const Value(false),
+          pendingOperation: const Value('UPDATE'),
         ),
-        backgroundColor: Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      );
+
+      if (context.mounted) context.pop();
+      return true;
+    } catch (e) {
+      _showError('Failed to update habit.');
+      return false;
+    }
+  }
+
+  // ── Delete ────────────────────────────────────────────────────────────────
+  Future<void> deleteHabit() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => DialogBox(
+        title: 'Delete Habit',
+        confirmText: 'Delete',
+        isDestructive: true,
+        content: const Text(
+          'Are you sure you want to delete this habit? This action cannot be undone.',
+        ),
+        onConfirm: () async {
+          await db.archiveHabit(habit.id);
+        },
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      context.pop();
+    }
+  }
+
+  // ── Error snackbar ────────────────────────────────────────────────────────
+  void _showError(String message) {
+    showAppSnackBar(context, message, type: SnackBarType.error);
   }
 }

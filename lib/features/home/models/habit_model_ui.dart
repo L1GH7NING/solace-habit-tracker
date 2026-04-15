@@ -4,8 +4,8 @@ class HabitUIModel {
   final String name;
   final String icon;
   final Color color;
-  final int current;
-  final int target;
+  final double current;
+  final double target;
   final String time;
 
   HabitUIModel({

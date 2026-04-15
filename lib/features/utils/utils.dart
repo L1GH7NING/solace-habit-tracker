@@ -25,4 +25,6 @@ class Utilities extends StatelessWidget {
   static TimeOfDay minutesToTimeOfDay(int minutes) {
     return TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
   }
+
+  
 }
