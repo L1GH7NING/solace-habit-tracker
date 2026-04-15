@@ -63,14 +63,17 @@ class ProgressCard extends StatelessWidget {
           const SizedBox(height: 8),
 
           // ── Big Percentage Number (Matched size/height to Streak) ─────
-          Text(
-            '$percent%',
-            style: TextStyle(
-              fontSize: 40,
-              fontWeight: FontWeight.w900,
-              color: theme.colorScheme.onSurface,
-              height: 1,
-              letterSpacing: -2,
+          SizedBox(
+            height: 44,
+            child: Text(
+              '$percent%',
+              style: TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.w900,
+                color: theme.colorScheme.onSurface,
+                height: 1,
+                letterSpacing: -2,
+              ),
             ),
           ),
 

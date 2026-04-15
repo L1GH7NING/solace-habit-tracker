@@ -5,10 +5,36 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 
-class PerfectStreakCard extends StatelessWidget {
+class PerfectStreakCard extends StatefulWidget {
   final PerfectStreakResult? result;
 
   const PerfectStreakCard({super.key, required this.result});
+
+  @override
+  State<PerfectStreakCard> createState() => _PerfectStreakCardState();
+}
+
+class _PerfectStreakCardState extends State<PerfectStreakCard> {
+  int _prevStreak = 0;
+
+  // true = number went up (slide in from bottom, exit to top)
+  // false = number went down (slide in from top, exit to bottom)
+  bool _isIncreasing = true;
+
+  @override
+  void didUpdateWidget(PerfectStreakCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final oldStreak = oldWidget.result?.currentStreak ?? 0;
+    final newStreak = widget.result?.currentStreak ?? 0;
+
+    if (newStreak != oldStreak) {
+      setState(() {
+        _isIncreasing = newStreak > oldStreak;
+        _prevStreak = oldStreak;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,10 +42,10 @@ class PerfectStreakCard extends StatelessWidget {
     final primary = theme.colorScheme.primary;
     final secondary = theme.colorScheme.secondary;
 
-    final isLoading = result == null;
-    final streak = result?.currentStreak ?? 0;
-    final best = result?.bestStreak ?? 0;
-    final last7 = result?.last7Days ?? List.filled(7, false);
+    final isLoading = widget.result == null;
+    final streak = widget.result?.currentStreak ?? 0;
+    final best = widget.result?.bestStreak ?? 0;
+    final last7 = widget.result?.last7Days ?? List.filled(7, false);
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -45,15 +71,15 @@ class PerfectStreakCard extends StatelessWidget {
             right: -8,
             bottom: -8,
             child: Opacity(
-              opacity: 0.5, //0.15
+              opacity: 0.15,
               child: SvgPicture.asset(
                 'assets/svgs/fire3.svg',
                 width: 90,
                 height: 90,
-                // colorFilter: const ColorFilter.mode(
-                //   Colors.white,
-                //   BlendMode.srcIn,
-                // ),
+                colorFilter: const ColorFilter.mode(
+                  Colors.white,
+                  BlendMode.srcIn,
+                ),
               ),
             ),
           ),
@@ -65,7 +91,7 @@ class PerfectStreakCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // ── Label ──────────────────────────────────────────────────
+                // Label
                 Text(
                   'PERFECT STREAK',
                   style: TextStyle(
@@ -78,19 +104,68 @@ class PerfectStreakCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                // ── Streak number ───────────────────────────────────────────
-                isLoading
-                    ? _shimmer(width: 56, height: 40) // Fixed to match text height
-                    : Text(
-                        '$streak',
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1,
-                          letterSpacing: -2,
+                // ── Animated streak number ──────────────────────────────────
+                SizedBox(
+                  height:
+                      44,
+                  child: isLoading
+                      ? _shimmer(width: 56, height: 40)
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 1000),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (child, animation) {
+                            // Direction: increasing → new slides up from below
+                            //            decreasing → new slides down from above
+                            final inOffset = _isIncreasing
+                                ? const Offset(0, 1) // enter from below
+                                : const Offset(0, -1); // enter from above
+                            final outOffset = _isIncreasing
+                                ? const Offset(0, -1) // exit to top
+                                : const Offset(0, 1); // exit to bottom
+
+                            final isIncoming = child.key == ValueKey(streak);
+
+                            final slideOffset = isIncoming
+                                ? inOffset
+                                : outOffset;
+
+                            final slideAnimation =
+                                Tween<Offset>(
+                                  begin: slideOffset,
+                                  end: Offset.zero,
+                                ).animate(
+                                  CurvedAnimation(
+                                    parent: animation,
+                                    curve: isIncoming
+                                        ? Curves.easeOutCubic
+                                        : Curves.easeInCubic,
+                                  ),
+                                );
+
+                            return ClipRect(
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: slideAnimation,
+                                  child: child,
+                                ),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            '$streak',
+                            key: ValueKey(streak),
+                            style: const TextStyle(
+                              fontSize: 40,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              height: 1,
+                              letterSpacing: -2,
+                            ),
+                          ),
                         ),
-                      ),
+                ),
 
                 const SizedBox(height: 2),
 
@@ -106,9 +181,12 @@ class PerfectStreakCard extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // ── Best badge ──────────────────────────────────────────────
+                // Best badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.18),
                     borderRadius: BorderRadius.circular(99),
@@ -123,7 +201,11 @@ class PerfectStreakCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        isLoading ? 'Best: —' : best == 1 ? 'Best: $best day' : 'Best: $best days',
+                        isLoading
+                            ? 'Best: —'
+                            : best == 1
+                            ? 'Best: $best day'
+                            : 'Best: $best days',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
@@ -136,6 +218,7 @@ class PerfectStreakCard extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
+                // Last 7 dots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(7, (i) {
