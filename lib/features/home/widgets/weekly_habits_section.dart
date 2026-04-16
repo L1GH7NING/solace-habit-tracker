@@ -57,6 +57,7 @@ class WeeklyHabitsSection extends StatelessWidget {
               userId: userId,
               date: weekStartDate,
             ),
+            selectedDate: DateTime.now(),
           ),
         ),
         if (allDone) const AllWeeklyCompletedMessage(),

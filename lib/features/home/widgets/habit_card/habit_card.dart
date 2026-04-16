@@ -20,6 +20,7 @@ class HabitCard extends StatefulWidget {
   final VoidCallback onTap;
   final Function(double value) onLog;
   final VoidCallback? onUndo;
+  final DateTime selectedDate;
 
   const HabitCard({
     super.key,
@@ -30,6 +31,7 @@ class HabitCard extends StatefulWidget {
     required this.onTap,
     required this.onLog,
     this.onUndo,
+    required this.selectedDate,
   });
 
   @override
@@ -67,7 +69,7 @@ class _HabitCardState extends State<HabitCard>
         context,
         Color(widget.habit.color),
       );
-      showJournalBottomSheet(context, widget.habit, color);
+      showJournalBottomSheet(context, widget.habit, color, widget.selectedDate);
       _slidableController.close();
     }
   }
@@ -158,7 +160,7 @@ class _HabitCardState extends State<HabitCard>
                 habitId: widget.habit.id,
                 color: habitColor,
                 onJournalOpen: () =>
-                    showJournalBottomSheet(context, widget.habit, habitColor),
+                    showJournalBottomSheet(context, widget.habit, habitColor, widget.selectedDate),
                 child: content,
               )
             : content,

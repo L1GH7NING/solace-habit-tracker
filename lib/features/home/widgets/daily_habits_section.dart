@@ -107,6 +107,7 @@ class DailyHabitsSection extends StatelessWidget {
               userId: userId,
               date: selectedDate,
             ),
+            selectedDate: selectedDate,
           ),
         ),
       ],

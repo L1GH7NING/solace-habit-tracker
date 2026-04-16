@@ -27,11 +27,16 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
 
   List<String> _getQuickAddValues(String unit) {
     switch (unit.toLowerCase()) {
-      case 'liters': return ['0.25', '0.5', '1.0'];
-      case 'ml': return ['100', '250', '500'];
-      case 'steps': return ['1k', '2.5k', '5k'];
-      case 'minutes': return ['10', '20', '30'];
-      default: return ['1', '5', '10'];
+      case 'liters':
+        return ['0.25', '0.5', '1.0'];
+      case 'ml':
+        return ['100', '250', '500'];
+      case 'steps':
+        return ['1k', '2.5k', '5k'];
+      case 'minutes':
+        return ['10', '20', '30'];
+      default:
+        return ['1', '5', '10'];
     }
   }
 
@@ -53,7 +58,7 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final Color accentColor = Color(widget.habit.color);
-    
+
     // Get keyboard height
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     const double navBarHeight = 80.0;
@@ -71,7 +76,7 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min, 
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Small Drag Handle
               Container(
@@ -100,7 +105,11 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                             color: accentColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(getIconFromId(widget.habit.icon), size: 20, color: accentColor),
+                          child: Icon(
+                            getIconFromId(widget.habit.icon),
+                            size: 20,
+                            color: accentColor,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -109,9 +118,14 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                             children: [
                               Text(
                                 widget.habit.title,
-                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                              Text("Log progress", style: theme.textTheme.bodySmall),
+                              Text(
+                                "Log progress",
+                                style: theme.textTheme.bodySmall,
+                              ),
                             ],
                           ),
                         ),
@@ -124,19 +138,30 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                     ),
 
                     const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Divider(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
 
                     // Quick Add Chips
                     Wrap(
                       spacing: 8,
-                      children: _getQuickAddValues(widget.habit.unit).map((val) {
-                        double numericVal = double.tryParse(val.replaceAll('k', '')) ?? 0;
+                      children: _getQuickAddValues(widget.habit.unit).map((
+                        val,
+                      ) {
+                        double numericVal =
+                            double.tryParse(val.replaceAll('k', '')) ?? 0;
                         if (val.contains('k')) numericVal *= 1000;
-                        
+
                         return ActionChip(
                           label: Text("$val ${widget.habit.unit}"),
                           labelStyle: theme.textTheme.bodySmall?.copyWith(
-                            color: accentColor, 
-                            fontWeight: FontWeight.bold
+                            color: accentColor,
+                            fontWeight: FontWeight.bold,
                           ),
                           backgroundColor: accentColor.withOpacity(0.1),
                           side: BorderSide.none,
@@ -156,7 +181,10 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                           Expanded(
                             child: TextFormField(
                               controller: _textController,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               style: const TextStyle(fontSize: 14),
                               decoration: InputDecoration(
                                 hintText: 'Custom amount...',
@@ -164,7 +192,10 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                                 isDense: true,
                                 contentPadding: const EdgeInsets.all(12),
                                 filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                                fillColor: theme
+                                    .colorScheme
+                                    .surfaceContainerHighest
+                                    .withOpacity(0.3),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
@@ -178,7 +209,9 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                               final val = double.tryParse(_textController.text);
                               if (val != null) _submit(val);
                             },
-                            style: IconButton.styleFrom(backgroundColor: accentColor),
+                            style: IconButton.styleFrom(
+                              backgroundColor: accentColor,
+                            ),
                             icon: const Icon(Icons.add_rounded),
                           ),
                         ],
@@ -195,9 +228,14 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
                         style: FilledButton.styleFrom(
                           backgroundColor: accentColor,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        child: const Text("Mark as done", style: TextStyle(fontWeight: FontWeight.bold)),
+                        child: const Text(
+                          "Mark as done",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   ],
