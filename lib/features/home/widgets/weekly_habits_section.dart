@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
-import 'package:zenith_habit_tracker/features/home/widgets/habit_card.dart';
+import 'package:zenith_habit_tracker/features/home/widgets/habit_card/habit_card.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/section_header.dart';
 
 class WeeklyHabitsSection extends StatelessWidget {
