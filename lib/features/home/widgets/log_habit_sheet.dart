@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
@@ -25,20 +27,11 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
 
   List<String> _getQuickAddValues(String unit) {
     switch (unit.toLowerCase()) {
-      case 'liters':
-        return ['0.25', '0.5', '1.0'];
-      case 'ml':
-        return ['100', '250', '500'];
-      case 'steps':
-        return ['1000', '2500', '5000'];
-      case 'minutes':
-        return ['10', '20', '30'];
-      case 'hours':
-        return ['0.5', '1', '2'];
-      case 'calories':
-        return ['100', '250', '500'];
-      default:
-        return ['1', '5', '10'];
+      case 'liters': return ['0.25', '0.5', '1.0'];
+      case 'ml': return ['100', '250', '500'];
+      case 'steps': return ['1k', '2.5k', '5k'];
+      case 'minutes': return ['10', '20', '30'];
+      default: return ['1', '5', '10'];
     }
   }
 
@@ -56,265 +49,155 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
     }
   }
 
-  void _submitFromTextField() {
-    if (_formKey.currentState!.validate()) {
-      final value = double.tryParse(_textController.text);
-      if (value != null) {
-        _submit(value);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final quickAddValues = _getQuickAddValues(widget.habit.unit);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final keyboardPadding = MediaQuery.of(context).viewInsets.bottom;
+    final Color accentColor = Color(widget.habit.color);
+    
+    // Get keyboard height
+    final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    const double navBarHeight = 80.0;
 
-    // 🔥 Direct Accent Color Extraction
-    final Color accentColor = Color(widget.habit.color); 
+    final double bottomPadding = math.max(keyboardHeight, navBarHeight);
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.65,
-      minChildSize: 0.50,
-      maxChildSize: 0.90,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+    // 1. Wrap the entire return statement in a Padding and SingleChildScrollView
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: SingleChildScrollView(
+        // Makes the content scrollable so it doesn't overflow when the keyboard appears
+        child: Container(
           decoration: BoxDecoration(
             color: theme.colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min, 
             children: [
-              // 🔥 Drag Handle
+              // Small Drag Handle
               Container(
-                width: 48,
-                height: 5,
-                margin: const EdgeInsets.only(bottom: 24),
+                width: 32,
+                height: 4,
+                margin: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
 
-              // 🔥 Header Section
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 🔥 HABIT ICON (Using the HabitTimeCard styling)
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: accentColor.withOpacity(0.1),
-                      shape: BoxShape.rectangle,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      getIconFromId(widget.habit.icon),
-                      size: 24,
-                      color: accentColor,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              Padding(
+                // 2. Fixed the massive 90px bottom padding here, changed it to 24.
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Row(
                       children: [
-                        Text(
-                          widget.habit.title,
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            letterSpacing: -0.5,
-                            color: theme.colorScheme.onSurface,
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: accentColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(getIconFromId(widget.habit.icon), size: 20, color: accentColor),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.habit.title,
+                                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text("Log progress", style: theme.textTheme.bodySmall),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "Log your progress",
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            // letterSpacing: 0.2,
-                          ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
-                  ),
 
-                  // 🔥 Premium Close Button
-                  Material(
-                    color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                    shape: const CircleBorder(),
-                    child: IconButton(
-                      icon: const Icon(Icons.close_rounded, size: 24),
-                      color: theme.colorScheme.onSurfaceVariant,
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // 🔥 CONTENT (Main Scrollable Sheet)
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.only(bottom: bottomPadding + keyboardPadding + 40),
-                  children: [
-                    // 🔥 QUICK ADD
-                    Text(
-                      'QUICK ADD',
-                      style: theme.textTheme.labelMedium
-                    ),
                     const SizedBox(height: 16),
 
+                    // Quick Add Chips
                     Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: quickAddValues.map((value) {
-                        return Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
+                      spacing: 8,
+                      children: _getQuickAddValues(widget.habit.unit).map((val) {
+                        double numericVal = double.tryParse(val.replaceAll('k', '')) ?? 0;
+                        if (val.contains('k')) numericVal *= 1000;
+                        
+                        return ActionChip(
+                          label: Text("$val ${widget.habit.unit}"),
+                          labelStyle: theme.textTheme.bodySmall?.copyWith(
+                            color: accentColor, 
+                            fontWeight: FontWeight.bold
                           ),
-                          child: Material(
-                            color: accentColor.withOpacity(0.1), // Themed Background
-                            borderRadius: BorderRadius.circular(16),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () => _submit(double.parse(value)),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 14,
-                                ),
-                                child: Text(
-                                  "$value ${widget.habit.unit}",
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: accentColor, // Themed Text
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                          backgroundColor: accentColor.withOpacity(0.1),
+                          side: BorderSide.none,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          onPressed: () => _submit(numericVal),
                         );
                       }).toList(),
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // 🔥 CUSTOM INPUT
-                    Text(
-                      'CUSTOM AMOUNT',
-                      style: theme.textTheme.labelMedium
-                    ),
                     const SizedBox(height: 16),
 
+                    // Custom Input
                     Form(
                       key: _formKey,
                       child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
                             child: TextFormField(
                               controller: _textController,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                              ],
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              cursorColor: accentColor, // Themed Cursor
+                              style: const TextStyle(fontSize: 14),
                               decoration: InputDecoration(
-                                hintText: '0.0',
-                                hintStyle: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                                ),
+                                hintText: 'Custom amount...',
                                 suffixText: widget.habit.unit,
-                                suffixStyle: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.all(12),
                                 filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 18,
-                                ),
+                                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
                                 border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  borderSide: BorderSide(
-                                    color: accentColor, // Themed Focus Ring
-                                    width: 2,
-                                  ),
-                                ),
                               ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return 'Enter value';
-                                if (double.tryParse(value) == null) return 'Invalid number';
-                                return null;
-                              },
-                              onFieldSubmitted: (_) => _submitFromTextField(),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          FilledButton(
-                            onPressed: _submitFromTextField,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: accentColor, // Themed Button
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 18,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: const Text(
-                              'Add',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
+                          const SizedBox(width: 8),
+                          IconButton.filled(
+                            onPressed: () {
+                              final val = double.tryParse(_textController.text);
+                              if (val != null) _submit(val);
+                            },
+                            style: IconButton.styleFrom(backgroundColor: accentColor),
+                            icon: const Icon(Icons.add_rounded),
                           ),
                         ],
                       ),
                     ),
 
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 16),
 
-                    // 🔥 MAIN BUTTON 
+                    // Main Button
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
+                      child: FilledButton(
                         onPressed: () => _submit(widget.habit.targetValue),
-                        icon: const Icon(Icons.check_circle_rounded, size: 22),
-                        label: const Text("Mark as done"),
                         style: FilledButton.styleFrom(
-                          backgroundColor: accentColor, // Themed Background
-                          foregroundColor: Colors.white, // White icon and text
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          textStyle: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
+                          backgroundColor: accentColor,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
+                        child: const Text("Mark as done", style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -322,8 +205,8 @@ class _LogHabitSheetState extends State<LogHabitSheet> {
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

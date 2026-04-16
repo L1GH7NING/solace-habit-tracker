@@ -7,7 +7,7 @@ import 'package:vibration/vibration.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
-import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart'; // Ensure this is imported
+import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/daily_habits_section.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/date_strip.dart';
@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
   late final String _userId;
   late DateTime _selectedDate;
   late DateTime _today;
-  late List<DateTime> _weekDays;
+  late List<DateTime> _datesList;
 
   // Banner State
   bool _showBanner = false;
@@ -45,13 +45,15 @@ class _HomePageState extends State<HomePage> {
       DateTime.now().day,
     );
     _selectedDate = _today;
-    _weekDays = List.generate(7, (i) => _today.subtract(Duration(days: 6 - i)));
+    _datesList = List.generate(
+  61, 
+  (index) => DateTime.now().subtract(const Duration(days: 30)).add(Duration(days: index))
+);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize the stream listener here to access Provider
     _streakSubscription ??= StatsService(
       Provider.of<AppDatabase>(context, listen: false),
     ).watchPerfectStreak(_userId).listen(_handleStreakUpdate);
@@ -61,12 +63,9 @@ class _HomePageState extends State<HomePage> {
     final current = result.currentStreak;
 
     if (_lastStreakCount != null) {
-      // 1. Trigger only if streak increases (User completed a perfect day)
       if (current > _lastStreakCount!) {
         _triggerBanner();
-      }
-      // 2. Hide immediately if streak decreases (User deleted a log)
-      else if (current < _lastStreakCount!) {
+      } else if (current < _lastStreakCount!) {
         _hideBanner();
       }
     }
@@ -104,6 +103,12 @@ class _HomePageState extends State<HomePage> {
       date.subtract(Duration(days: date.weekday - 1));
 
   bool _applies(Habit h, DateTime d) {
+    // FIX: Strip the time component completely so "Today 5:00 PM" matches "Today 00:00 AM"
+    final habitStartDay = DateTime(h.startDate.year, h.startDate.month, h.startDate.day);
+    final checkDay = DateTime(d.year, d.month, d.day);
+    
+    if (checkDay.isBefore(habitStartDay)) return false;
+  
     if (h.frequencyDays == null || h.frequencyDays!.isEmpty) return true;
     final map = {
       1: 'MON',
@@ -125,11 +130,13 @@ class _HomePageState extends State<HomePage> {
       Provider.of<AppDatabase>(context, listen: false),
     );
 
+    final bool canLog = !_selectedDate.isAfter(_today);
+    final bool canJournal = !_selectedDate.isAfter(_today);
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Backgrounds
           Positioned(
             top: -60,
             left: -80,
@@ -161,7 +168,7 @@ class _HomePageState extends State<HomePage> {
                   DateStrip(
                     selectedDate: _selectedDate,
                     today: _today,
-                    weekDays: _weekDays,
+                    dates: _datesList,
                     onDateSelected: (d) => setState(() => _selectedDate = d),
                   ),
                   const SizedBox(height: 20),
@@ -212,6 +219,8 @@ class _HomePageState extends State<HomePage> {
                                       userId: _userId,
                                       selectedDate: _selectedDate,
                                       isToday: _selectedDate == _today,
+                                      canLog: canLog,
+                                      canJournal: canJournal,
                                     ),
                                   if (weekly.isNotEmpty) ...[
                                     const SizedBox(height: 28),
@@ -238,7 +247,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Celebration Banner
           TopCelebrationBanner(
             visible: _showBanner,
             title: "Great Job!",

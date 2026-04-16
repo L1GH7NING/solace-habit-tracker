@@ -99,6 +99,7 @@ class _AppShell extends StatelessWidget {
 
     return Scaffold(
       extendBodyBehindAppBar: true,
+      resizeToAvoidBottomInset: false,
       extendBody: true,
       // 1. Remove the bottom padding injected by bottomNavigationBar
       // This tells inner pages to draw underneath the floating pill.

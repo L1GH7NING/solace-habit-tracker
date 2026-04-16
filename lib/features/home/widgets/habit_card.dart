@@ -2,6 +2,7 @@ import 'dart:async'; // Import for the Timer
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
@@ -12,6 +13,8 @@ import 'package:zenith_habit_tracker/features/utils/utils.dart';
 class HabitCard extends StatefulWidget {
   final Habit habit;
   final double currentProgress;
+  final bool canLog; // Used to decide to show/hide the action log button
+  final bool canJournal; // NEW: Controls if the journal slide action is enabled
   final VoidCallback onTap;
   final Function(double value) onLog;
 
@@ -23,6 +26,8 @@ class HabitCard extends StatefulWidget {
     super.key,
     required this.habit,
     required this.currentProgress,
+    this.canLog = true,
+    this.canJournal = true, // NEW: Default to true
     required this.onTap,
     required this.onLog,
     this.onUndo,
@@ -32,16 +37,43 @@ class HabitCard extends StatefulWidget {
   State<HabitCard> createState() => _HabitCardState();
 }
 
-class _HabitCardState extends State<HabitCard> {
-  // State to track if the 'X' icon should be shown for confirmation
+class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
   bool _isUndoConfirmationVisible = false;
   Timer? _undoTimer;
 
+  // Controller is only needed if journaling is possible. We initialize it
+  // lazily or in initState and it will simply be unused if canJournal is false.
+  late final SlidableController _slidableController;
+
+  @override
+  void initState() {
+    super.initState();
+    // The controller and listener are lightweight. It's safe to always
+    // initialize them. They will only be active if a Slidable is in the tree.
+    _slidableController = SlidableController(this)
+      ..animation.addStatusListener(_onSlideStatusChanged);
+  }
+
   @override
   void dispose() {
-    // Cancel the timer when the widget is removed from the tree to prevent memory leaks
+    _slidableController.animation.removeStatusListener(_onSlideStatusChanged);
+    _slidableController.dispose();
     _undoTimer?.cancel();
     super.dispose();
+  }
+
+  void _onSlideStatusChanged(AnimationStatus status) {
+    // This check is important. Only proceed if journaling is enabled for this card.
+    if (!widget.canJournal) return;
+
+    if (status == AnimationStatus.completed) {
+      final habitColor = AdaptiveColors.accent(
+        context,
+        Color(widget.habit.color),
+      );
+      _showJournalBottomSheet(context, habitColor);
+      _slidableController.close();
+    }
   }
 
   IconData getIconFromId(String id) {
@@ -52,25 +84,18 @@ class _HabitCardState extends State<HabitCard> {
 
   void _handleActionTap(BuildContext context, bool isDone) {
     if (isDone) {
-      // Habit is completed, handle the undo logic
       if (_isUndoConfirmationVisible) {
-        // This is the SECOND tap (on the 'X' icon). Perform the undo action.
-        _undoTimer?.cancel(); // Stop the timer
+        _undoTimer?.cancel();
         HapticFeedback.mediumImpact();
-        widget.onUndo?.call(); // Execute the callback to delete logs
-        // We don't need to set state here, as the parent widget will rebuild
-        // the card with new progress, which will hide the confirmation state naturally.
+        widget.onUndo?.call();
       } else {
-        // This is the FIRST tap (on the '✓' icon). Show the 'X' for confirmation.
         HapticFeedback.lightImpact();
         setState(() {
           _isUndoConfirmationVisible = true;
         });
 
-        // Start a timer to automatically revert to the checkmark if not confirmed
-        _undoTimer?.cancel(); // Cancel any existing timer
+        _undoTimer?.cancel();
         _undoTimer = Timer(const Duration(seconds: 3), () {
-          // Check if the widget is still mounted before calling setState
           if (mounted) {
             setState(() {
               _isUndoConfirmationVisible = false;
@@ -79,10 +104,59 @@ class _HabitCardState extends State<HabitCard> {
         });
       }
     } else {
-      // Habit is not completed, show the logging dialog
       HapticFeedback.lightImpact();
       handleLog(context: context, habit: widget.habit, onLog: widget.onLog);
     }
+  }
+
+  void _showJournalBottomSheet(BuildContext context, Color color) {
+    HapticFeedback.lightImpact();
+    final theme = Theme.of(context);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: theme.colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        height: 300,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(LucideIcons.bookOpen, color: color),
+                const SizedBox(width: 12),
+                Text(
+                  'Journal',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Habit: ${widget.habit.title}',
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: Center(
+                child: Text(
+                  'Dummy Journal content goes here.',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -93,37 +167,34 @@ class _HabitCardState extends State<HabitCard> {
     final progress = target > 0
         ? (widget.currentProgress / target).clamp(0.0, 1.0)
         : 0.0;
-    final habitColor = AdaptiveColors.accent(context, Color(widget.habit.color));
+    final habitColor = AdaptiveColors.accent(
+      context,
+      Color(widget.habit.color),
+    );
 
     final progressText = widget.currentProgress.toStringAsFixed(
-      widget.currentProgress.truncateToDouble() == widget.currentProgress ? 0 : 1,
+      widget.currentProgress.truncateToDouble() == widget.currentProgress
+          ? 0
+          : 1,
     );
     final targetText = target.toStringAsFixed(
       target.truncateToDouble() == target ? 0 : 1,
     );
-    
-    // If the habit is no longer 'done', we should not be in the confirmation state.
+
     if (!isDone && _isUndoConfirmationVisible) {
       _isUndoConfirmationVisible = false;
       _undoTimer?.cancel();
     }
 
-    return GestureDetector(
+    // Define the core, non-slidable card content as a separate widget.
+    // This makes the conditional logic below cleaner.
+    final cardContent = GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(18),
           border: Border(left: BorderSide(color: habitColor, width: 4)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         child: Row(
           children: [
@@ -212,44 +283,110 @@ class _HabitCardState extends State<HabitCard> {
             const SizedBox(width: 12),
 
             // Action button
-            GestureDetector(
-              onTap: () => _handleActionTap(context, isDone),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 36,
-                height: 36,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  // Show an error color during confirmation for better UX
-                  color: isDone && _isUndoConfirmationVisible
-                      ? theme.colorScheme.error
-                      : habitColor,
-                  shape: BoxShape.circle,
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  transitionBuilder: (child, animation) {
-                    return ScaleTransition(scale: animation, child: child);
-                  },
-                  child: Icon(
-                    // Determine which icon to show based on state
-                    isDone
-                        ? (_isUndoConfirmationVisible ? LucideIcons.x : LucideIcons.check)
-                        : LucideIcons.penLine,
-                    // Use a unique key for each icon to ensure AnimatedSwitcher works correctly
-                    key: ValueKey<String>(
-                      isDone
-                          ? (_isUndoConfirmationVisible ? 'confirm_undo' : 'done')
-                          : 'log',
+            widget.canLog
+                ? GestureDetector(
+                    onTap: () => _handleActionTap(context, isDone),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      width: 36,
+                      height: 36,
+                      clipBehavior: Clip.antiAlias,
+                      decoration: BoxDecoration(
+                        color: isDone && _isUndoConfirmationVisible
+                            ? theme.colorScheme.error
+                            : habitColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        transitionBuilder: (child, animation) {
+                          return ScaleTransition(
+                            scale: animation,
+                            child: child,
+                          );
+                        },
+                        child: Icon(
+                          isDone
+                              ? (_isUndoConfirmationVisible
+                                    ? LucideIcons.x
+                                    : LucideIcons.check)
+                              : LucideIcons.penLine,
+                          key: ValueKey<String>(
+                            isDone
+                                ? (_isUndoConfirmationVisible
+                                      ? 'confirm_undo'
+                                      : 'done')
+                                : 'log',
+                          ),
+                          size: 20,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+                  )
+                : const SizedBox(width: 36, height: 36),
           ],
         ),
+      ),
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        // *** CORE CHANGE IS HERE ***
+        // Use a ternary operator to conditionally render the Slidable
+        // or just the card content itself.
+        child: widget.canJournal
+            ? Slidable(
+                key: ValueKey('slidable_journal_${widget.habit.id}'),
+                controller: _slidableController,
+                endActionPane: ActionPane(
+                  motion: const StretchMotion(),
+                  extentRatio: 0.35,
+                  children: [
+                    CustomSlidableAction(
+                      onPressed: (context) {
+                        _showJournalBottomSheet(context, habitColor);
+                      },
+                      padding: EdgeInsets.zero, // important
+                      backgroundColor:
+                          Colors.transparent, // remove default color
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              theme.colorScheme.primary,
+                              theme.colorScheme.secondary,
+                            ],
+                          ),
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(16),
+                            bottomRight: Radius.circular(16),
+                          ), // match your card radius
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          LucideIcons.notebookPen,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                child: cardContent,
+              )
+            : cardContent, // If canJournal is false, render the card without the slidable wrapper.
       ),
     );
   }

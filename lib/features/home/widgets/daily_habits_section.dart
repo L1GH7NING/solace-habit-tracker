@@ -16,6 +16,8 @@ class DailyHabitsSection extends StatelessWidget {
   final String userId;
   final DateTime selectedDate;
   final bool isToday;
+  final bool canLog; // Parameter explicitly added here
+  final bool canJournal;
 
   const DailyHabitsSection({
     super.key,
@@ -24,6 +26,8 @@ class DailyHabitsSection extends StatelessWidget {
     required this.userId,
     required this.selectedDate,
     required this.isToday,
+    this.canLog = true, // Default to true so it doesn't break instances
+    this.canJournal = true,
   });
 
   double _progressFor(Habit habit) => dailyCompletions
@@ -37,18 +41,15 @@ class DailyHabitsSection extends StatelessWidget {
     );
 
     // ─── SORTING LOGIC ───
-    // We create a mutable copy of the list and sort it by habitTime
     final sortedHabits = List<Habit>.from(dailyHabits)
       ..sort((a, b) {
         final timeA = a.habitTime;
         final timeB = b.habitTime;
 
-        // Handle null values (habits without a set time go to the bottom)
         if (timeA == null && timeB == null) return 0;
         if (timeA == null) return 1;
         if (timeB == null) return -1;
 
-        // Standard string or DateTime comparison
         return timeA.compareTo(timeB);
       });
 
@@ -92,6 +93,8 @@ class DailyHabitsSection extends StatelessWidget {
             key: ValueKey('daily_${habit.id}_$selectedDate'),
             habit: habit,
             currentProgress: _progressFor(habit),
+            canLog: canLog, // Passed parameter explicitly
+            canJournal: canJournal,
             onTap: () => context.push('/edit-habit', extra: habit),
             onLog: (v) => habitService.logCompletionForDate(
               habitId: habit.id,
