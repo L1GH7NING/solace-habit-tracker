@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:zenith_habit_tracker/features/habits/pages/edit_habit_page.dart';
+import 'package:zenith_habit_tracker/features/habits/pages/habit_info_page.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/daily_goal_selector.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/edit_form_components.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/shared_habit_widgets.dart';

@@ -10,17 +10,15 @@ part 'app_database.g.dart';
 
 class Habits extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get serverId => text().nullable()(); // null until synced
-  TextColumn get userId => text()(); // firebase_uid or 'guest'
+  TextColumn get serverId => text().nullable()();
+  TextColumn get userId => text()();
   TextColumn get title => text()();
   TextColumn get description => text().nullable()();
-  IntColumn get color => integer()(); // store as ARGB int
-  TextColumn get icon => text()(); // emoji or icon name
+  IntColumn get color => integer()();
+  TextColumn get icon => text()();
   TextColumn get frequencyType =>
-      text() // 'DAILY','WEEKLY','MONTHLY'
-          .withDefault(const Constant('DAILY'))();
-  TextColumn get frequencyDays =>
-      text().nullable()(); // JSON e.g. '["MON","WED"]'
+      text().withDefault(const Constant('DAILY'))();
+  TextColumn get frequencyDays => text().nullable()();
   RealColumn get targetValue => real().withDefault(const Constant(1))();
   TextColumn get unit => text().withDefault(const Constant('times'))();
   TextColumn get type => text().nullable()();
@@ -31,8 +29,7 @@ class Habits extends Table {
   BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   DateTimeColumn get updatedAt => dateTime()();
   BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
-  TextColumn get pendingOperation =>
-      text().nullable()(); // 'CREATE','UPDATE','DELETE'
+  TextColumn get pendingOperation => text().nullable()();
 }
 
 class HabitCompletions extends Table {
@@ -48,20 +45,36 @@ class HabitCompletions extends Table {
   TextColumn get pendingOperation => text().nullable()();
 }
 
+class JournalEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get serverId => text().nullable()(); // null until synced
+  IntColumn get habitId => integer().references(Habits, #id)();
+  TextColumn get userId => text()();
+  TextColumn get content => text()();
+  DateTimeColumn get date => dateTime()(); // the day this entry belongs to
+  BoolColumn get isCompleted =>
+      boolean().withDefault(const Constant(false))(); // was habit done that day
+  IntColumn get mood => integer().nullable()(); // optional 1–5 mood score
+  TextColumn get tags => text().nullable()(); // JSON e.g. '["focus","sleep"]'
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+  BoolColumn get isSynced => boolean().withDefault(const Constant(false))();
+  TextColumn get pendingOperation => text().nullable()();
+}
+
 // ── Database ─────────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [Habits, HabitCompletions])
+@DriftDatabase(tables: [Habits, HabitCompletions, JournalEntries])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
       if (from < 3) {
-        // Add new columns
         await migrator.addColumn(
           habits,
           habits.targetValue as GeneratedColumn<Object>,
@@ -70,27 +83,23 @@ class AppDatabase extends _$AppDatabase {
           habits,
           habits.unit as GeneratedColumn<Object>,
         );
-
         await migrator.addColumn(
           habitCompletions,
           habitCompletions.value as GeneratedColumn<Object>,
         );
-
-        // OPTIONAL: migrate old data
-        await customStatement('''
-        UPDATE habits SET target_value = target_count
-      ''');
-
-        await customStatement('''
-        UPDATE habit_completions SET value = count
-      ''');
+        await customStatement('UPDATE habits SET target_value = target_count');
+        await customStatement(
+          'UPDATE habit_completions SET value = count',
+        );
+      }
+      if (from < 4) {
+        await migrator.createTable(journalEntries);
       }
     },
   );
 
   // ── Habits ────────────────────────────────────────────────────────────────
 
-  // Watch all non-archived habits for a user (reactive stream)
   Stream<List<Habit>> watchHabits(String userId) =>
       (select(habits)
             ..where((h) => h.userId.equals(userId) & h.isArchived.equals(false))
@@ -120,35 +129,97 @@ class AppDatabase extends _$AppDatabase {
   ) {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    return (select(habitCompletions)..where(
-          (c) =>
-              c.userId.equals(userId) &
-              c.completedAt.isBiggerOrEqualValue(start) &
-              c.completedAt.isSmallerThanValue(end),
-        ))
+    return (select(habitCompletions)
+          ..where(
+            (c) =>
+                c.userId.equals(userId) &
+                c.completedAt.isBiggerOrEqualValue(start) &
+                c.completedAt.isSmallerThanValue(end),
+          ))
         .watch();
   }
 
-  bool isCompleted(double progress, double target) {
-    return progress >= target;
-  }
+  bool isCompleted(double progress, double target) => progress >= target;
 
   Future<int> insertCompletion(HabitCompletionsCompanion completion) =>
       into(habitCompletions).insert(completion);
 
+  // ── Journal ───────────────────────────────────────────────────────────────
+
+  /// Watch all journal entries for a habit, newest first.
+  Stream<List<JournalEntry>> watchJournalEntries(int habitId) =>
+      (select(journalEntries)
+            ..where((j) => j.habitId.equals(habitId))
+            ..orderBy([(j) => OrderingTerm.desc(j.date)]))
+          .watch();
+
+  /// Watch the single entry for a habit on a specific calendar day.
+  Stream<JournalEntry?> watchJournalEntryForDate(
+    int habitId,
+    DateTime date,
+  ) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(journalEntries)
+          ..where(
+            (j) =>
+                j.habitId.equals(habitId) &
+                j.date.isBiggerOrEqualValue(start) &
+                j.date.isSmallerThanValue(end),
+          )
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
+  Future<JournalEntry?> getJournalEntryForDate(
+    int habitId,
+    DateTime date,
+  ) {
+    final start = DateTime(date.year, date.month, date.day);
+    final end = start.add(const Duration(days: 1));
+    return (select(journalEntries)
+          ..where(
+            (j) =>
+                j.habitId.equals(habitId) &
+                j.date.isBiggerOrEqualValue(start) &
+                j.date.isSmallerThanValue(end),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  Future<int> insertJournalEntry(JournalEntriesCompanion entry) =>
+      into(journalEntries).insert(entry);
+
+  Future<bool> updateJournalEntry(JournalEntriesCompanion entry) =>
+      update(journalEntries).replace(entry);
+
+  Future<int> deleteJournalEntry(int id) =>
+      (delete(journalEntries)..where((j) => j.id.equals(id))).go();
+
   // ── Sync helpers ──────────────────────────────────────────────────────────
 
-  // Fetch everything that hasn't been synced yet
   Future<List<Habit>> getUnsyncedHabits() =>
       (select(habits)..where((h) => h.isSynced.equals(false))).get();
 
   Future<List<HabitCompletion>> getUnsyncedCompletions() =>
       (select(habitCompletions)..where((c) => c.isSynced.equals(false))).get();
 
-  // Mark a habit as synced and store the server-assigned ID
+  Future<List<JournalEntry>> getUnsyncedJournalEntries() =>
+      (select(journalEntries)..where((j) => j.isSynced.equals(false))).get();
+
   Future<void> markHabitSynced(int localId, String serverId) =>
       (update(habits)..where((h) => h.id.equals(localId))).write(
         HabitsCompanion(
+          serverId: Value(serverId),
+          isSynced: const Value(true),
+          pendingOperation: const Value(null),
+        ),
+      );
+
+  Future<void> markJournalEntrySynced(int localId, String serverId) =>
+      (update(journalEntries)..where((j) => j.id.equals(localId))).write(
+        JournalEntriesCompanion(
           serverId: Value(serverId),
           isSynced: const Value(true),
           pendingOperation: const Value(null),

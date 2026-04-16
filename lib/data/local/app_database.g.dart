@@ -1713,6 +1713,757 @@ class HabitCompletionsCompanion extends UpdateCompanion<HabitCompletion> {
   }
 }
 
+class $JournalEntriesTable extends JournalEntries
+    with TableInfo<$JournalEntriesTable, JournalEntry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JournalEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<String> serverId = GeneratedColumn<String>(
+    'server_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _habitIdMeta = const VerificationMeta(
+    'habitId',
+  );
+  @override
+  late final GeneratedColumn<int> habitId = GeneratedColumn<int>(
+    'habit_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES habits (id)',
+    ),
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isCompletedMeta = const VerificationMeta(
+    'isCompleted',
+  );
+  @override
+  late final GeneratedColumn<bool> isCompleted = GeneratedColumn<bool>(
+    'is_completed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_completed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _moodMeta = const VerificationMeta('mood');
+  @override
+  late final GeneratedColumn<int> mood = GeneratedColumn<int>(
+    'mood',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _tagsMeta = const VerificationMeta('tags');
+  @override
+  late final GeneratedColumn<String> tags = GeneratedColumn<String>(
+    'tags',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _pendingOperationMeta = const VerificationMeta(
+    'pendingOperation',
+  );
+  @override
+  late final GeneratedColumn<String> pendingOperation = GeneratedColumn<String>(
+    'pending_operation',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    serverId,
+    habitId,
+    userId,
+    content,
+    date,
+    isCompleted,
+    mood,
+    tags,
+    createdAt,
+    updatedAt,
+    isSynced,
+    pendingOperation,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journal_entries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JournalEntry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    }
+    if (data.containsKey('habit_id')) {
+      context.handle(
+        _habitIdMeta,
+        habitId.isAcceptableOrUnknown(data['habit_id']!, _habitIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_habitIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('is_completed')) {
+      context.handle(
+        _isCompletedMeta,
+        isCompleted.isAcceptableOrUnknown(
+          data['is_completed']!,
+          _isCompletedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('mood')) {
+      context.handle(
+        _moodMeta,
+        mood.isAcceptableOrUnknown(data['mood']!, _moodMeta),
+      );
+    }
+    if (data.containsKey('tags')) {
+      context.handle(
+        _tagsMeta,
+        tags.isAcceptableOrUnknown(data['tags']!, _tagsMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    if (data.containsKey('pending_operation')) {
+      context.handle(
+        _pendingOperationMeta,
+        pendingOperation.isAcceptableOrUnknown(
+          data['pending_operation']!,
+          _pendingOperationMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  JournalEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JournalEntry(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_id'],
+      ),
+      habitId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}habit_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      isCompleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_completed'],
+      )!,
+      mood: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mood'],
+      ),
+      tags: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tags'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+      pendingOperation: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pending_operation'],
+      ),
+    );
+  }
+
+  @override
+  $JournalEntriesTable createAlias(String alias) {
+    return $JournalEntriesTable(attachedDatabase, alias);
+  }
+}
+
+class JournalEntry extends DataClass implements Insertable<JournalEntry> {
+  final int id;
+  final String? serverId;
+  final int habitId;
+  final String userId;
+  final String content;
+  final DateTime date;
+  final bool isCompleted;
+  final int? mood;
+  final String? tags;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final bool isSynced;
+  final String? pendingOperation;
+  const JournalEntry({
+    required this.id,
+    this.serverId,
+    required this.habitId,
+    required this.userId,
+    required this.content,
+    required this.date,
+    required this.isCompleted,
+    this.mood,
+    this.tags,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.isSynced,
+    this.pendingOperation,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || serverId != null) {
+      map['server_id'] = Variable<String>(serverId);
+    }
+    map['habit_id'] = Variable<int>(habitId);
+    map['user_id'] = Variable<String>(userId);
+    map['content'] = Variable<String>(content);
+    map['date'] = Variable<DateTime>(date);
+    map['is_completed'] = Variable<bool>(isCompleted);
+    if (!nullToAbsent || mood != null) {
+      map['mood'] = Variable<int>(mood);
+    }
+    if (!nullToAbsent || tags != null) {
+      map['tags'] = Variable<String>(tags);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    map['is_synced'] = Variable<bool>(isSynced);
+    if (!nullToAbsent || pendingOperation != null) {
+      map['pending_operation'] = Variable<String>(pendingOperation);
+    }
+    return map;
+  }
+
+  JournalEntriesCompanion toCompanion(bool nullToAbsent) {
+    return JournalEntriesCompanion(
+      id: Value(id),
+      serverId: serverId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverId),
+      habitId: Value(habitId),
+      userId: Value(userId),
+      content: Value(content),
+      date: Value(date),
+      isCompleted: Value(isCompleted),
+      mood: mood == null && nullToAbsent ? const Value.absent() : Value(mood),
+      tags: tags == null && nullToAbsent ? const Value.absent() : Value(tags),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      isSynced: Value(isSynced),
+      pendingOperation: pendingOperation == null && nullToAbsent
+          ? const Value.absent()
+          : Value(pendingOperation),
+    );
+  }
+
+  factory JournalEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JournalEntry(
+      id: serializer.fromJson<int>(json['id']),
+      serverId: serializer.fromJson<String?>(json['serverId']),
+      habitId: serializer.fromJson<int>(json['habitId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      content: serializer.fromJson<String>(json['content']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      isCompleted: serializer.fromJson<bool>(json['isCompleted']),
+      mood: serializer.fromJson<int?>(json['mood']),
+      tags: serializer.fromJson<String?>(json['tags']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+      pendingOperation: serializer.fromJson<String?>(json['pendingOperation']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'serverId': serializer.toJson<String?>(serverId),
+      'habitId': serializer.toJson<int>(habitId),
+      'userId': serializer.toJson<String>(userId),
+      'content': serializer.toJson<String>(content),
+      'date': serializer.toJson<DateTime>(date),
+      'isCompleted': serializer.toJson<bool>(isCompleted),
+      'mood': serializer.toJson<int?>(mood),
+      'tags': serializer.toJson<String?>(tags),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+      'isSynced': serializer.toJson<bool>(isSynced),
+      'pendingOperation': serializer.toJson<String?>(pendingOperation),
+    };
+  }
+
+  JournalEntry copyWith({
+    int? id,
+    Value<String?> serverId = const Value.absent(),
+    int? habitId,
+    String? userId,
+    String? content,
+    DateTime? date,
+    bool? isCompleted,
+    Value<int?> mood = const Value.absent(),
+    Value<String?> tags = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? isSynced,
+    Value<String?> pendingOperation = const Value.absent(),
+  }) => JournalEntry(
+    id: id ?? this.id,
+    serverId: serverId.present ? serverId.value : this.serverId,
+    habitId: habitId ?? this.habitId,
+    userId: userId ?? this.userId,
+    content: content ?? this.content,
+    date: date ?? this.date,
+    isCompleted: isCompleted ?? this.isCompleted,
+    mood: mood.present ? mood.value : this.mood,
+    tags: tags.present ? tags.value : this.tags,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    isSynced: isSynced ?? this.isSynced,
+    pendingOperation: pendingOperation.present
+        ? pendingOperation.value
+        : this.pendingOperation,
+  );
+  JournalEntry copyWithCompanion(JournalEntriesCompanion data) {
+    return JournalEntry(
+      id: data.id.present ? data.id.value : this.id,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      habitId: data.habitId.present ? data.habitId.value : this.habitId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      content: data.content.present ? data.content.value : this.content,
+      date: data.date.present ? data.date.value : this.date,
+      isCompleted: data.isCompleted.present
+          ? data.isCompleted.value
+          : this.isCompleted,
+      mood: data.mood.present ? data.mood.value : this.mood,
+      tags: data.tags.present ? data.tags.value : this.tags,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      pendingOperation: data.pendingOperation.present
+          ? data.pendingOperation.value
+          : this.pendingOperation,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntry(')
+          ..write('id: $id, ')
+          ..write('serverId: $serverId, ')
+          ..write('habitId: $habitId, ')
+          ..write('userId: $userId, ')
+          ..write('content: $content, ')
+          ..write('date: $date, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('mood: $mood, ')
+          ..write('tags: $tags, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('pendingOperation: $pendingOperation')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    serverId,
+    habitId,
+    userId,
+    content,
+    date,
+    isCompleted,
+    mood,
+    tags,
+    createdAt,
+    updatedAt,
+    isSynced,
+    pendingOperation,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JournalEntry &&
+          other.id == this.id &&
+          other.serverId == this.serverId &&
+          other.habitId == this.habitId &&
+          other.userId == this.userId &&
+          other.content == this.content &&
+          other.date == this.date &&
+          other.isCompleted == this.isCompleted &&
+          other.mood == this.mood &&
+          other.tags == this.tags &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.isSynced == this.isSynced &&
+          other.pendingOperation == this.pendingOperation);
+}
+
+class JournalEntriesCompanion extends UpdateCompanion<JournalEntry> {
+  final Value<int> id;
+  final Value<String?> serverId;
+  final Value<int> habitId;
+  final Value<String> userId;
+  final Value<String> content;
+  final Value<DateTime> date;
+  final Value<bool> isCompleted;
+  final Value<int?> mood;
+  final Value<String?> tags;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<bool> isSynced;
+  final Value<String?> pendingOperation;
+  const JournalEntriesCompanion({
+    this.id = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.habitId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.content = const Value.absent(),
+    this.date = const Value.absent(),
+    this.isCompleted = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.tags = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.pendingOperation = const Value.absent(),
+  });
+  JournalEntriesCompanion.insert({
+    this.id = const Value.absent(),
+    this.serverId = const Value.absent(),
+    required int habitId,
+    required String userId,
+    required String content,
+    required DateTime date,
+    this.isCompleted = const Value.absent(),
+    this.mood = const Value.absent(),
+    this.tags = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.isSynced = const Value.absent(),
+    this.pendingOperation = const Value.absent(),
+  }) : habitId = Value(habitId),
+       userId = Value(userId),
+       content = Value(content),
+       date = Value(date),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<JournalEntry> custom({
+    Expression<int>? id,
+    Expression<String>? serverId,
+    Expression<int>? habitId,
+    Expression<String>? userId,
+    Expression<String>? content,
+    Expression<DateTime>? date,
+    Expression<bool>? isCompleted,
+    Expression<int>? mood,
+    Expression<String>? tags,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<bool>? isSynced,
+    Expression<String>? pendingOperation,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serverId != null) 'server_id': serverId,
+      if (habitId != null) 'habit_id': habitId,
+      if (userId != null) 'user_id': userId,
+      if (content != null) 'content': content,
+      if (date != null) 'date': date,
+      if (isCompleted != null) 'is_completed': isCompleted,
+      if (mood != null) 'mood': mood,
+      if (tags != null) 'tags': tags,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (pendingOperation != null) 'pending_operation': pendingOperation,
+    });
+  }
+
+  JournalEntriesCompanion copyWith({
+    Value<int>? id,
+    Value<String?>? serverId,
+    Value<int>? habitId,
+    Value<String>? userId,
+    Value<String>? content,
+    Value<DateTime>? date,
+    Value<bool>? isCompleted,
+    Value<int?>? mood,
+    Value<String?>? tags,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? isSynced,
+    Value<String?>? pendingOperation,
+  }) {
+    return JournalEntriesCompanion(
+      id: id ?? this.id,
+      serverId: serverId ?? this.serverId,
+      habitId: habitId ?? this.habitId,
+      userId: userId ?? this.userId,
+      content: content ?? this.content,
+      date: date ?? this.date,
+      isCompleted: isCompleted ?? this.isCompleted,
+      mood: mood ?? this.mood,
+      tags: tags ?? this.tags,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isSynced: isSynced ?? this.isSynced,
+      pendingOperation: pendingOperation ?? this.pendingOperation,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<String>(serverId.value);
+    }
+    if (habitId.present) {
+      map['habit_id'] = Variable<int>(habitId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (isCompleted.present) {
+      map['is_completed'] = Variable<bool>(isCompleted.value);
+    }
+    if (mood.present) {
+      map['mood'] = Variable<int>(mood.value);
+    }
+    if (tags.present) {
+      map['tags'] = Variable<String>(tags.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (pendingOperation.present) {
+      map['pending_operation'] = Variable<String>(pendingOperation.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JournalEntriesCompanion(')
+          ..write('id: $id, ')
+          ..write('serverId: $serverId, ')
+          ..write('habitId: $habitId, ')
+          ..write('userId: $userId, ')
+          ..write('content: $content, ')
+          ..write('date: $date, ')
+          ..write('isCompleted: $isCompleted, ')
+          ..write('mood: $mood, ')
+          ..write('tags: $tags, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('pendingOperation: $pendingOperation')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1720,6 +2471,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $HabitCompletionsTable habitCompletions = $HabitCompletionsTable(
     this,
   );
+  late final $JournalEntriesTable journalEntries = $JournalEntriesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1727,6 +2479,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     habits,
     habitCompletions,
+    journalEntries,
   ];
 }
 
@@ -1796,6 +2549,24 @@ final class $$HabitsTableReferences
     final cache = $_typedResult.readTableOrNull(
       _habitCompletionsRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$JournalEntriesTable, List<JournalEntry>>
+  _journalEntriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.journalEntries,
+    aliasName: $_aliasNameGenerator(db.habits.id, db.journalEntries.habitId),
+  );
+
+  $$JournalEntriesTableProcessedTableManager get journalEntriesRefs {
+    final manager = $$JournalEntriesTableTableManager(
+      $_db,
+      $_db.journalEntries,
+    ).filter((f) => f.habitId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_journalEntriesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -1927,6 +2698,31 @@ class $$HabitsTableFilterComposer
           }) => $$HabitCompletionsTableFilterComposer(
             $db: $db,
             $table: $db.habitCompletions,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> journalEntriesRefs(
+    Expression<bool> Function($$JournalEntriesTableFilterComposer f) f,
+  ) {
+    final $$JournalEntriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.habitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableFilterComposer(
+            $db: $db,
+            $table: $db.journalEntries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2154,6 +2950,31 @@ class $$HabitsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> journalEntriesRefs<T extends Object>(
+    Expression<T> Function($$JournalEntriesTableAnnotationComposer a) f,
+  ) {
+    final $$JournalEntriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.journalEntries,
+      getReferencedColumn: (t) => t.habitId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$JournalEntriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.journalEntries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$HabitsTableTableManager
@@ -2169,7 +2990,10 @@ class $$HabitsTableTableManager
           $$HabitsTableUpdateCompanionBuilder,
           (Habit, $$HabitsTableReferences),
           Habit,
-          PrefetchHooks Function({bool habitCompletionsRefs})
+          PrefetchHooks Function({
+            bool habitCompletionsRefs,
+            bool journalEntriesRefs,
+          })
         > {
   $$HabitsTableTableManager(_$AppDatabase db, $HabitsTable table)
     : super(
@@ -2276,37 +3100,63 @@ class $$HabitsTableTableManager
                     (e.readTable(table), $$HabitsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({habitCompletionsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (habitCompletionsRefs) db.habitCompletions,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (habitCompletionsRefs)
-                    await $_getPrefetchedData<
-                      Habit,
-                      $HabitsTable,
-                      HabitCompletion
-                    >(
-                      currentTable: table,
-                      referencedTable: $$HabitsTableReferences
-                          ._habitCompletionsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$HabitsTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).habitCompletionsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.habitId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({habitCompletionsRefs = false, journalEntriesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (habitCompletionsRefs) db.habitCompletions,
+                    if (journalEntriesRefs) db.journalEntries,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (habitCompletionsRefs)
+                        await $_getPrefetchedData<
+                          Habit,
+                          $HabitsTable,
+                          HabitCompletion
+                        >(
+                          currentTable: table,
+                          referencedTable: $$HabitsTableReferences
+                              ._habitCompletionsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$HabitsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).habitCompletionsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.habitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (journalEntriesRefs)
+                        await $_getPrefetchedData<
+                          Habit,
+                          $HabitsTable,
+                          JournalEntry
+                        >(
+                          currentTable: table,
+                          referencedTable: $$HabitsTableReferences
+                              ._journalEntriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$HabitsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).journalEntriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.habitId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -2323,7 +3173,10 @@ typedef $$HabitsTableProcessedTableManager =
       $$HabitsTableUpdateCompanionBuilder,
       (Habit, $$HabitsTableReferences),
       Habit,
-      PrefetchHooks Function({bool habitCompletionsRefs})
+      PrefetchHooks Function({
+        bool habitCompletionsRefs,
+        bool journalEntriesRefs,
+      })
     >;
 typedef $$HabitCompletionsTableCreateCompanionBuilder =
     HabitCompletionsCompanion Function({
@@ -2745,6 +3598,481 @@ typedef $$HabitCompletionsTableProcessedTableManager =
       HabitCompletion,
       PrefetchHooks Function({bool habitId})
     >;
+typedef $$JournalEntriesTableCreateCompanionBuilder =
+    JournalEntriesCompanion Function({
+      Value<int> id,
+      Value<String?> serverId,
+      required int habitId,
+      required String userId,
+      required String content,
+      required DateTime date,
+      Value<bool> isCompleted,
+      Value<int?> mood,
+      Value<String?> tags,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> isSynced,
+      Value<String?> pendingOperation,
+    });
+typedef $$JournalEntriesTableUpdateCompanionBuilder =
+    JournalEntriesCompanion Function({
+      Value<int> id,
+      Value<String?> serverId,
+      Value<int> habitId,
+      Value<String> userId,
+      Value<String> content,
+      Value<DateTime> date,
+      Value<bool> isCompleted,
+      Value<int?> mood,
+      Value<String?> tags,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> isSynced,
+      Value<String?> pendingOperation,
+    });
+
+final class $$JournalEntriesTableReferences
+    extends BaseReferences<_$AppDatabase, $JournalEntriesTable, JournalEntry> {
+  $$JournalEntriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $HabitsTable _habitIdTable(_$AppDatabase db) => db.habits.createAlias(
+    $_aliasNameGenerator(db.journalEntries.habitId, db.habits.id),
+  );
+
+  $$HabitsTableProcessedTableManager get habitId {
+    final $_column = $_itemColumn<int>('habit_id')!;
+
+    final manager = $$HabitsTableTableManager(
+      $_db,
+      $_db.habits,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_habitIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$JournalEntriesTableFilterComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pendingOperation => $composableBuilder(
+    column: $table.pendingOperation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$HabitsTableFilterComposer get habitId {
+    final $$HabitsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableFilterComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get mood => $composableBuilder(
+    column: $table.mood,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tags => $composableBuilder(
+    column: $table.tags,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pendingOperation => $composableBuilder(
+    column: $table.pendingOperation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$HabitsTableOrderingComposer get habitId {
+    final $$HabitsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableOrderingComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JournalEntriesTable> {
+  $$JournalEntriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<bool> get isCompleted => $composableBuilder(
+    column: $table.isCompleted,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get mood =>
+      $composableBuilder(column: $table.mood, builder: (column) => column);
+
+  GeneratedColumn<String> get tags =>
+      $composableBuilder(column: $table.tags, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+
+  GeneratedColumn<String> get pendingOperation => $composableBuilder(
+    column: $table.pendingOperation,
+    builder: (column) => column,
+  );
+
+  $$HabitsTableAnnotationComposer get habitId {
+    final $$HabitsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.habitId,
+      referencedTable: $db.habits,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$HabitsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.habits,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$JournalEntriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JournalEntriesTable,
+          JournalEntry,
+          $$JournalEntriesTableFilterComposer,
+          $$JournalEntriesTableOrderingComposer,
+          $$JournalEntriesTableAnnotationComposer,
+          $$JournalEntriesTableCreateCompanionBuilder,
+          $$JournalEntriesTableUpdateCompanionBuilder,
+          (JournalEntry, $$JournalEntriesTableReferences),
+          JournalEntry,
+          PrefetchHooks Function({bool habitId})
+        > {
+  $$JournalEntriesTableTableManager(
+    _$AppDatabase db,
+    $JournalEntriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JournalEntriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$JournalEntriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$JournalEntriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> serverId = const Value.absent(),
+                Value<int> habitId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int?> mood = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<String?> pendingOperation = const Value.absent(),
+              }) => JournalEntriesCompanion(
+                id: id,
+                serverId: serverId,
+                habitId: habitId,
+                userId: userId,
+                content: content,
+                date: date,
+                isCompleted: isCompleted,
+                mood: mood,
+                tags: tags,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                pendingOperation: pendingOperation,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> serverId = const Value.absent(),
+                required int habitId,
+                required String userId,
+                required String content,
+                required DateTime date,
+                Value<bool> isCompleted = const Value.absent(),
+                Value<int?> mood = const Value.absent(),
+                Value<String?> tags = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> isSynced = const Value.absent(),
+                Value<String?> pendingOperation = const Value.absent(),
+              }) => JournalEntriesCompanion.insert(
+                id: id,
+                serverId: serverId,
+                habitId: habitId,
+                userId: userId,
+                content: content,
+                date: date,
+                isCompleted: isCompleted,
+                mood: mood,
+                tags: tags,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                isSynced: isSynced,
+                pendingOperation: pendingOperation,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$JournalEntriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({habitId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (habitId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.habitId,
+                                referencedTable: $$JournalEntriesTableReferences
+                                    ._habitIdTable(db),
+                                referencedColumn:
+                                    $$JournalEntriesTableReferences
+                                        ._habitIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$JournalEntriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JournalEntriesTable,
+      JournalEntry,
+      $$JournalEntriesTableFilterComposer,
+      $$JournalEntriesTableOrderingComposer,
+      $$JournalEntriesTableAnnotationComposer,
+      $$JournalEntriesTableCreateCompanionBuilder,
+      $$JournalEntriesTableUpdateCompanionBuilder,
+      (JournalEntry, $$JournalEntriesTableReferences),
+      JournalEntry,
+      PrefetchHooks Function({bool habitId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2753,4 +4081,6 @@ class $AppDatabaseManager {
       $$HabitsTableTableManager(_db, _db.habits);
   $$HabitCompletionsTableTableManager get habitCompletions =>
       $$HabitCompletionsTableTableManager(_db, _db.habitCompletions);
+  $$JournalEntriesTableTableManager get journalEntries =>
+      $$JournalEntriesTableTableManager(_db, _db.journalEntries);
 }

@@ -5,6 +5,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
+import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
 import 'package:zenith_habit_tracker/features/home/utils/log_habit_handler.dart';
 
 import 'habit_card_content.dart';
@@ -21,6 +22,7 @@ class HabitCard extends StatefulWidget {
   final Function(double value) onLog;
   final VoidCallback? onUndo;
   final DateTime selectedDate;
+  final JournalService journalService;
 
   const HabitCard({
     super.key,
@@ -32,14 +34,14 @@ class HabitCard extends StatefulWidget {
     required this.onLog,
     this.onUndo,
     required this.selectedDate,
+    required this.journalService,
   });
 
   @override
   State<HabitCard> createState() => _HabitCardState();
 }
 
-class _HabitCardState extends State<HabitCard>
-    with TickerProviderStateMixin {
+class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
   bool _isUndoConfirmationVisible = false;
   Timer? _undoTimer;
   late final SlidableController _slidableController;
@@ -53,9 +55,7 @@ class _HabitCardState extends State<HabitCard>
 
   @override
   void dispose() {
-    _slidableController.animation.removeStatusListener(
-      _onSlideStatusChanged,
-    );
+    _slidableController.animation.removeStatusListener(_onSlideStatusChanged);
     _slidableController.dispose();
     _undoTimer?.cancel();
     super.dispose();
@@ -65,11 +65,14 @@ class _HabitCardState extends State<HabitCard>
     if (!widget.canJournal) return;
 
     if (status == AnimationStatus.completed) {
-      final color = AdaptiveColors.accent(
+      final color = AdaptiveColors.accent(context, Color(widget.habit.color));
+      showJournalBottomSheet(
         context,
-        Color(widget.habit.color),
+        widget.habit,
+        color,
+        widget.selectedDate,
+        widget.journalService,
       );
-      showJournalBottomSheet(context, widget.habit, color, widget.selectedDate);
       _slidableController.close();
     }
   }
@@ -93,11 +96,7 @@ class _HabitCardState extends State<HabitCard>
       }
     } else {
       HapticFeedback.lightImpact();
-      handleLog(
-        context: context,
-        habit: widget.habit,
-        onLog: widget.onLog,
-      );
+      handleLog(context: context, habit: widget.habit, onLog: widget.onLog);
     }
   }
 
@@ -142,25 +141,24 @@ class _HabitCardState extends State<HabitCard>
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
+
+      /// 🔥 FIX: Use Material instead of ClipRRect + BoxShadow
+      child: Material(
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
+        elevation: 2, // smooth + GPU friendly
+        clipBehavior: Clip.antiAlias,
         child: widget.canJournal
             ? HabitSlidableWrapper(
                 controller: _slidableController,
                 habitId: widget.habit.id,
                 color: habitColor,
-                onJournalOpen: () =>
-                    showJournalBottomSheet(context, widget.habit, habitColor, widget.selectedDate),
+                onJournalOpen: () => showJournalBottomSheet(
+                  context,
+                  widget.habit,
+                  habitColor,
+                  widget.selectedDate,
+                  widget.journalService,
+                ),
                 child: content,
               )
             : content,

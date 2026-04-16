@@ -1,5 +1,3 @@
-// lib/features/habits/views/edit_habit_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
@@ -14,13 +12,13 @@ import 'package:zenith_habit_tracker/features/habits/widgets/appearance_bottom_s
 import 'package:zenith_habit_tracker/features/habits/widgets/habit_constants.dart';
 import 'package:zenith_habit_tracker/features/utils/utils.dart';
 
-class EditHabitPage extends StatefulWidget {
+class HabitInfoPage extends StatefulWidget {
   final Habit habit;
 
-  const EditHabitPage({super.key, required this.habit});
+  const HabitInfoPage({super.key, required this.habit});
 
   @override
-  State<EditHabitPage> createState() => _EditHabitPageState();
+  State<HabitInfoPage> createState() => _HabitInfoPageState();
 }
 
 class EditHabitPageStateAccess {
@@ -61,7 +59,7 @@ class EditHabitPageStateAccess {
   });
 }
 
-class _EditHabitPageState extends State<EditHabitPage> {
+class _HabitInfoPageState extends State<HabitInfoPage> {
   late final EditHabitController _controller;
 
   // ADDED: PageController to manage the swiping

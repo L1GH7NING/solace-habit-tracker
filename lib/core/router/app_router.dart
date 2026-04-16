@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/bottom_nav.dart';
 import 'package:zenith_habit_tracker/features/habits/pages/create_habit_page.dart';
-import 'package:zenith_habit_tracker/features/habits/pages/edit_habit_page.dart';
+import 'package:zenith_habit_tracker/features/habits/pages/habit_info_page.dart';
 import 'package:zenith_habit_tracker/features/profile/pages/profile_page.dart';
 import 'package:zenith_habit_tracker/pages/set_name_page.dart';
 import '../../pages/onboarding_page.dart';
@@ -45,11 +45,11 @@ class AppRouter {
         builder: (context, state) => const SetNamePage(),
       ),
       GoRoute(
-        path: '/edit-habit',
-        name: 'editHabit',
+        path: '/habit-info',
+        name: 'habitInfo',
         builder: (context, state) {
           final habit = state.extra as Habit;
-          return EditHabitPage(habit: habit);
+          return HabitInfoPage(habit: habit);
         },
       ),
 

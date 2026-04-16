@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
+import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/habit_card/habit_card.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/perfect_streak_card.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/progress_card.dart';
@@ -16,7 +17,7 @@ class DailyHabitsSection extends StatelessWidget {
   final String userId;
   final DateTime selectedDate;
   final bool isToday;
-  final bool canLog; // Parameter explicitly added here
+  final bool canLog;
   final bool canJournal;
 
   const DailyHabitsSection({
@@ -26,7 +27,7 @@ class DailyHabitsSection extends StatelessWidget {
     required this.userId,
     required this.selectedDate,
     required this.isToday,
-    this.canLog = true, // Default to true so it doesn't break instances
+    this.canLog = true,
     this.canJournal = true,
   });
 
@@ -36,11 +37,10 @@ class DailyHabitsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final habitService = HabitService(
-      Provider.of<AppDatabase>(context, listen: false),
-    );
+    final appDb = Provider.of<AppDatabase>(context, listen: false);
+    final habitService = HabitService(appDb);
+    final journalService = JournalService(appDb);
 
-    // ─── SORTING LOGIC ───
     final sortedHabits = List<Habit>.from(dailyHabits)
       ..sort((a, b) {
         final timeA = a.habitTime;
@@ -56,6 +56,7 @@ class DailyHabitsSection extends StatelessWidget {
     final completedCount = dailyHabits
         .where((h) => _progressFor(h) >= h.targetValue)
         .length;
+
     final formattedDate = DateFormat('MMMM d').format(selectedDate);
 
     return Column(
@@ -73,9 +74,7 @@ class DailyHabitsSection extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: StreamBuilder<PerfectStreakResult>(
-                stream: StatsService(
-                  Provider.of<AppDatabase>(context, listen: false),
-                ).watchPerfectStreak(userId),
+                stream: StatsService(appDb).watchPerfectStreak(userId),
                 builder: (context, streakSnap) =>
                     PerfectStreakCard(result: streakSnap.data),
               ),
@@ -87,28 +86,39 @@ class DailyHabitsSection extends StatelessWidget {
           title: isToday ? "Today's Habits" : "Habits for $formattedDate",
         ),
         const SizedBox(height: 12),
-        // ─── RENDERING SORTED LIST ───
-        ...sortedHabits.map(
-          (habit) => HabitCard(
-            key: ValueKey('daily_${habit.id}_$selectedDate'),
-            habit: habit,
-            currentProgress: _progressFor(habit),
-            canLog: canLog, // Passed parameter explicitly
-            canJournal: canJournal,
-            onTap: () => context.push('/edit-habit', extra: habit),
-            onLog: (v) => habitService.logCompletionForDate(
-              habitId: habit.id,
-              userId: userId,
-              value: v,
-              date: selectedDate,
-            ),
-            onUndo: () => habitService.deleteCompletionsForDay(
-              habitId: habit.id,
-              userId: userId,
-              date: selectedDate,
-            ),
-            selectedDate: selectedDate,
-          ),
+
+        /// 🔥 FIX: Lazy list + repaint isolation
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: sortedHabits.length,
+          itemBuilder: (context, index) {
+            final habit = sortedHabits[index];
+
+            return RepaintBoundary(
+              child: HabitCard(
+                key: ValueKey('daily_${habit.id}_$selectedDate'),
+                habit: habit,
+                currentProgress: _progressFor(habit),
+                canLog: canLog,
+                canJournal: canJournal,
+                onTap: () => context.push('/habit-info', extra: habit),
+                onLog: (v) => habitService.logCompletionForDate(
+                  habitId: habit.id,
+                  userId: userId,
+                  value: v,
+                  date: selectedDate,
+                ),
+                onUndo: () => habitService.deleteCompletionsForDay(
+                  habitId: habit.id,
+                  userId: userId,
+                  date: selectedDate,
+                ),
+                selectedDate: selectedDate,
+                journalService: journalService,
+              ),
+            );
+          },
         ),
       ],
     );
