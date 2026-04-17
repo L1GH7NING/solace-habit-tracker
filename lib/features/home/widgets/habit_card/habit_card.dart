@@ -45,6 +45,7 @@ class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
   bool _isUndoConfirmationVisible = false;
   Timer? _undoTimer;
   late final SlidableController _slidableController;
+  bool _isPressed = false;
 
   @override
   void initState() {
@@ -59,6 +60,16 @@ class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
     _slidableController.dispose();
     _undoTimer?.cancel();
     super.dispose();
+  }
+
+  void _setPressed(bool value) {
+    if (_isPressed != value) {
+      setState(() => _isPressed = value);
+
+      if (value) {
+        HapticFeedback.selectionClick();
+      }
+    }
   }
 
   void _onSlideStatusChanged(AnimationStatus status) {
@@ -126,7 +137,7 @@ class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
             habitColor: habitColor,
             onTap: () => _handleActionTap(isDone),
           )
-        : const SizedBox(width: 36, height: 36);
+        : const SizedBox(width: 4, height: 36);
 
     final content = HabitCardContent(
       habit: widget.habit,
@@ -142,26 +153,46 @@ class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
 
-      /// 🔥 FIX: Use Material instead of ClipRRect + BoxShadow
-      child: Material(
-        borderRadius: BorderRadius.circular(18),
-        elevation: 2, // smooth + GPU friendly
-        clipBehavior: Clip.antiAlias,
-        child: widget.canJournal
-            ? HabitSlidableWrapper(
-                controller: _slidableController,
-                habitId: widget.habit.id,
-                color: habitColor,
-                onJournalOpen: () => showJournalBottomSheet(
-                  context,
-                  widget.habit,
-                  habitColor,
-                  widget.selectedDate,
-                  widget.journalService,
-                ),
-                child: content,
-              )
-            : content,
+      child: Opacity(
+        opacity: isDone ? 0.7 : 1.0,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+        
+          onTapDown: (_) => _setPressed(true),
+          onTapUp: (_) {
+            _setPressed(false);
+            widget.onTap(); // ✅ NAVIGATION RESTORED
+          },
+          onTapCancel: () => _setPressed(false),
+        
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            curve: Curves.easeOut,
+            transform: Matrix4.identity()..scale(_isPressed ? 0.97 : 1.0),
+        
+            child: Material(
+              borderRadius: BorderRadius.circular(18),
+              elevation: _isPressed ? 1 : 2, // 👈 tactile depth change
+              clipBehavior: Clip.antiAlias,
+        
+              child: widget.canJournal
+                  ? HabitSlidableWrapper(
+                      controller: _slidableController,
+                      habitId: widget.habit.id,
+                      color: habitColor,
+                      onJournalOpen: () => showJournalBottomSheet(
+                        context,
+                        widget.habit,
+                        habitColor,
+                        widget.selectedDate,
+                        widget.journalService,
+                      ),
+                      child: content,
+                    )
+                  : content,
+            ),
+          ),
+        ),
       ),
     );
   }

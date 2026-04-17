@@ -202,7 +202,8 @@ class EditHabitController implements HabitControllerBase {
     );
 
     if (confirmed == true && context.mounted) {
-      context.pop();
+      showAppSnackBar(context, 'Deleted Successfully', type: SnackBarType.success);
+      context.go("/home");
     }
   }
 

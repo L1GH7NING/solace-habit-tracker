@@ -201,6 +201,7 @@ class _HomePageState extends State<HomePage> {
                         return EmptyState(
                           message: "No habits today",
                           theme: theme,
+                          showCTA: _selectedDate == _today,
                         );
                       }
 
@@ -249,7 +250,7 @@ class _HomePageState extends State<HomePage> {
             visible: _showBanner,
             title: "Great Job!",
             message: "You completed all habits for today",
-            animationSeed: _lastStreakCount ?? 0,
+            // animationSeed: _lastStreakCount ?? 0,
           ),
         ],
       ),

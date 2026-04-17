@@ -49,7 +49,7 @@ class WeeklyHabitsSection extends StatelessWidget {
             key: ValueKey('weekly_${habit.id}_$weekStartDate'),
             habit: habit,
             currentProgress: _progressFor(habit),
-            onTap: () => context.push('/edit-habit', extra: habit),
+            onTap: () => context.push('/habit-info/${habit.id}'),
             onLog: (v) => habitService.logCompletionForDate(
               habitId: habit.id,
               userId: userId,

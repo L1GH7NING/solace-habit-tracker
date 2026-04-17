@@ -44,20 +44,26 @@ class EditHabitBottomNav extends StatelessWidget {
                 // ✨ DYNAMIC COLORS FROM THEME
                 color: acrylic.backgroundColor,
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: acrylic.borderColor,
-                  width: 1.2,
-                ),
+                border: Border.all(color: acrylic.borderColor, width: 1.2),
               ),
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildNavItem(0, Icons.leaderboard_rounded, 'Stats', theme),
-                      _buildNavItem(1, Icons.edit_rounded, 'Edit', theme),
+                      _buildNavItem(0, Icons.notes, "Journals", theme),
+                      _buildNavItem(
+                        1,
+                        Icons.leaderboard_rounded,
+                        'Stats',
+                        theme,
+                      ),
+                      _buildNavItem(2, Icons.edit_rounded, 'Edit', theme),
                     ],
                   ),
                 ),
@@ -69,7 +75,12 @@ class EditHabitBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(int index, IconData icon, String label, ThemeData theme) {
+  Widget _buildNavItem(
+    int index,
+    IconData icon,
+    String label,
+    ThemeData theme,
+  ) {
     final isActive = index == selectedIndex;
     return GestureDetector(
       onTap: () => onTap(index),
@@ -82,7 +93,10 @@ class EditHabitBottomNav extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: isActive
               ? LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.secondary],
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.secondary,
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 )
@@ -95,7 +109,7 @@ class EditHabitBottomNav extends StatelessWidget {
                     color: theme.colorScheme.primary.withOpacity(0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : [],
         ),
@@ -120,7 +134,7 @@ class EditHabitBottomNav extends StatelessWidget {
                   letterSpacing: -0.2,
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),

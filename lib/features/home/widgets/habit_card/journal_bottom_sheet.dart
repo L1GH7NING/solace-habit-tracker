@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
+import 'package:zenith_habit_tracker/features/habits/models/mood_model.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/habit_constants.dart';
 import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
+
+// ── Sheet entry point ─────────────────────────────────────────────────────────
 
 void showJournalBottomSheet(
   BuildContext context,
@@ -29,6 +33,8 @@ void showJournalBottomSheet(
   );
 }
 
+// ── Widget ────────────────────────────────────────────────────────────────────
+
 class JournalBottomSheet extends StatefulWidget {
   final Habit habit;
   final Color color;
@@ -51,50 +57,40 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
   final TextEditingController _controller = TextEditingController();
   bool _isSaving = false;
   JournalEntry? _existingEntry;
+  int? _selectedMood; // 1–5
 
   @override
   void initState() {
     super.initState();
-    // 1. Add listener to trigger rebuilds when user types
     _controller.addListener(_onTextChanged);
     _loadExistingEntry();
   }
 
   @override
   void dispose() {
-    // 2. Clean up listener
     _controller.removeListener(_onTextChanged);
     _controller.dispose();
     super.dispose();
   }
 
-  void _onTextChanged() {
-    setState(() {});
-  }
+  void _onTextChanged() => setState(() {});
 
   bool get _canSave {
     if (_isSaving) return false;
-
-    final currentText = _controller.text.trim();
-
-    // Disable if empty
-    if (currentText.isEmpty) return false;
-
-    // If updating, disable if text is exactly the same as the original
+    final text = _controller.text.trim();
+    if (text.isEmpty) return false;
     if (_existingEntry != null) {
-      return currentText != _existingEntry!.content.trim();
+      final textChanged = text != _existingEntry!.content.trim();
+      final moodChanged = _selectedMood != _existingEntry!.mood;
+      return textChanged || moodChanged;
     }
-
     return true;
   }
 
-  IconData getIconFromId(String id) {
-    return iconOptions
-        .firstWhere((opt) => opt.id == id, orElse: () => iconOptions.first)
-        .icon;
-  }
+  IconData getIconFromId(String id) => iconOptions
+      .firstWhere((opt) => opt.id == id, orElse: () => iconOptions.first)
+      .icon;
 
-  /// Pre-populate the field if an entry already exists for this day.
   Future<void> _loadExistingEntry() async {
     final entry = await widget.journalService
         .watchEntryForDate(widget.habit.id, widget.date)
@@ -106,42 +102,150 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
         _controller.selection = TextSelection.collapsed(
           offset: entry.content.length,
         );
+        _selectedMood = entry.mood;
       });
     }
   }
 
   String getFormattedDate() => DateFormat('EEEE, MMM d').format(widget.date);
 
-  // Inside _JournalBottomSheetState in your UI file
   Future<void> _handleSave() async {
-    if (!_canSave) return; // Extra safety check
-
+    if (!_canSave) return;
     setState(() => _isSaving = true);
-
     try {
       await widget.journalService.saveEntry(
         habitId: widget.habit.id,
         content: _controller.text.trim(),
         date: widget.date,
+        mood: _selectedMood,
       );
       HapticFeedback.mediumImpact();
       if (mounted) {
         Navigator.pop(context);
-        showAppSnackBar(context, "Journal Saved!", type: SnackBarType.success);
+        showAppSnackBar(context, "Journal saved!", type: SnackBarType.success);
       }
     } catch (e) {
       if (mounted) {
-        showAppSnackBar(context, 'Failed to save: $e', type: SnackBarType.error);
+        showAppSnackBar(
+          context,
+          'Failed to save: $e',
+          type: SnackBarType.error,
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
   }
 
+  Future<void> _handleDelete() async {
+    await widget.journalService.deleteEntry(_existingEntry!.id);
+    if (mounted) Navigator.pop(context);
+  }
+
+  // ── Mood selector row ───────────────────────────────────────────────────────
+
+  Widget _buildMoodSelector(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'How are you feeling?',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 4),
+        // Padding prevents the upward animation from clipping into the text above
+        Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: moods.map((mood) {
+              final isSelected = _selectedMood == mood.value;
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    // Tap selected mood again to deselect
+                    _selectedMood = isSelected ? null : mood.value;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutBack,
+                  // Shifts the item up slightly when selected
+                  transform: Matrix4.translationValues(
+                    0,
+                    isSelected ? -12.0 : 0.0,
+                    0,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Glow Background & Emoji
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // Soft radial gradient glow instead of a round container
+                          gradient: isSelected
+                              ? RadialGradient(
+                                  colors: [
+                                    mood.color.withOpacity(0.4),
+                                    mood.color.withOpacity(0.0),
+                                  ],
+                                  stops: const [0.2, 1.0],
+                                )
+                              : null,
+                        ),
+                        child: Center(
+                          child: AnimatedScale(
+                            scale: isSelected ? 1.25 : 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOutBack,
+                            child: SvgPicture.asset(
+                              mood.assetPath,
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Label underneath the emoji
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? mood.color
+                              : theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        ),
+                        child: Text(mood.label),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Build ───────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     const double navBarHeight = 80.0;
     final double contentBottomPadding = keyboardHeight > 0
@@ -157,7 +261,7 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Drag handle ────────────────────────────────────────────
+            // ── Drag handle ──────────────────────────────────────────────
             Container(
               width: 32,
               height: 4,
@@ -173,7 +277,7 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Header ───────────────────────────────────────────
+                  // ── Header ─────────────────────────────────────────────
                   Row(
                     children: [
                       Container(
@@ -201,13 +305,12 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
                               ),
                             ),
                             Text(
-                              "Journal for ${getFormattedDate()}",
+                              'Journal · ${getFormattedDate()}',
                               style: theme.textTheme.bodySmall,
                             ),
                           ],
                         ),
                       ),
-                      // Delete button when editing an existing entry
                       if (_existingEntry != null)
                         IconButton(
                           visualDensity: VisualDensity.compact,
@@ -216,12 +319,7 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
                             color: theme.colorScheme.error,
                             size: 18,
                           ),
-                          onPressed: () async {
-                            await widget.journalService.deleteEntry(
-                              _existingEntry!.id,
-                            );
-                            if (mounted) Navigator.pop(context);
-                          },
+                          onPressed: _handleDelete,
                         ),
                       IconButton(
                         visualDensity: VisualDensity.compact,
@@ -231,23 +329,29 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Divider(
                       color: theme.colorScheme.onSurfaceVariant.withOpacity(
-                        0.2,
+                        0.15,
                       ),
                       height: 1,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
+                  
+                  // ── Mood selector ───────────────────────────────────────
+                  _buildMoodSelector(theme),
 
-                  // ── Text input ────────────────────────────────────────
+                  const SizedBox(height: 24), // Added a bit more breathing room
+
+                  // ── Text input ──────────────────────────────────────────
                   ConstrainedBox(
                     constraints: BoxConstraints(
-                      minHeight: 160,
-                      maxHeight: MediaQuery.of(context).size.height * 0.35,
+                      minHeight: 140,
+                      maxHeight: MediaQuery.of(context).size.height * 0.3,
                     ),
                     child: TextField(
                       controller: _controller,
@@ -256,9 +360,10 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
                       keyboardType: TextInputType.multiline,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface,
+                        height: 1.6,
                       ),
                       decoration: InputDecoration(
-                        hintText: "Write your thoughts...",
+                        hintText: 'Write your thoughts...',
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 20,
                           vertical: 14,
@@ -274,37 +379,40 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
 
                   const SizedBox(height: 16),
 
-                  // ── Save button ───────────────────────────────────────
+                  // ── Save button ─────────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      // 3. Button is disabled if _canSave is false
-                      onPressed: _canSave ? _handleSave : null,
-                      icon: _isSaving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(LucideIcons.save),
-                      label: Text(
-                        _existingEntry != null ? "Update Entry" : "Save Entry",
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      style: FilledButton.styleFrom(
-                        // 4. Change color to grey when disabled
-                        backgroundColor: _canSave
-                            ? widget.color
-                            : theme.colorScheme.onSurface.withOpacity(0.12),
-                        foregroundColor: _canSave
-                            ? Colors.white
-                            : theme.colorScheme.onSurface.withOpacity(0.38),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: FilledButton.icon(
+                        onPressed: _canSave ? _handleSave : null,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(LucideIcons.save),
+                        label: Text(
+                          _existingEntry != null
+                              ? 'Update Entry'
+                              : 'Save Entry',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _canSave
+                              ? widget.color
+                              : theme.colorScheme.onSurface.withOpacity(0.12),
+                          foregroundColor: _canSave
+                              ? Colors.white
+                              : theme.colorScheme.onSurface.withOpacity(0.38),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),

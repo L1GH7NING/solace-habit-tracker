@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:zenith_habit_tracker/data/local/app_database.dart';
+import 'package:zenith_habit_tracker/core/router/route_observer.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/bottom_nav.dart';
 import 'package:zenith_habit_tracker/features/habits/pages/create_habit_page.dart';
 import 'package:zenith_habit_tracker/features/habits/pages/habit_info_page.dart';
+import 'package:zenith_habit_tracker/features/all-habits/pages/all_habits_page.dart';
 import 'package:zenith_habit_tracker/features/profile/pages/profile_page.dart';
 import 'package:zenith_habit_tracker/pages/set_name_page.dart';
 import '../../pages/onboarding_page.dart';
@@ -17,6 +18,7 @@ import '../../features/auth/providers/user_provider.dart';
 class AppRouter {
   static final router = GoRouter(
     initialLocation: '/',
+    observers: [routeObserver],
     routes: [
       // ── Auth flow (no bottom nav) ─────────────────────────────────────────
       GoRoute(
@@ -45,11 +47,11 @@ class AppRouter {
         builder: (context, state) => const SetNamePage(),
       ),
       GoRoute(
-        path: '/habit-info',
+        path: '/habit-info/:id',
         name: 'habitInfo',
         builder: (context, state) {
-          final habit = state.extra as Habit;
-          return HabitInfoPage(habit: habit);
+          final id = state.pathParameters['id']!;
+          return HabitInfoPage(habitId: id);
         },
       ),
 
@@ -63,9 +65,9 @@ class AppRouter {
             builder: (context, state) => const HomePage(),
           ),
           GoRoute(
-            path: '/stats',
-            name: 'stats',
-            builder: (context, state) => const _PlaceholderPage(title: 'Stats'),
+            path: '/all',
+            name: 'allHabits',
+            builder: (context, state) => const AllHabitsPage(),
           ),
           GoRoute(
             path: '/add-habit',

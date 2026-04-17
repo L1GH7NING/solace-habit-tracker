@@ -71,7 +71,8 @@ class _HabitStatsContent extends StatelessWidget {
     final isLoading = stats == null;
 
     // 🟢 Added the unit directly to the Total Done text
-    final totalText = isLoading ? '—' : '${stats.totalDone} ${habit.unit}';
+    final freq = habit.frequencyType == 'DAILY' ? 'days' : 'weeks';
+    final totalText = isLoading ? '—' : '${stats.totalDone} $freq';
 
     final compText = isLoading
         ? '—%'
@@ -86,7 +87,6 @@ class _HabitStatsContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Habit Icon & Title (Read-Only) ──
           Center(
             child: Column(
               children: [
@@ -161,7 +161,7 @@ class _HabitStatsContent extends StatelessWidget {
                   color: accentColor,
                   infoTitle: 'Total Done',
                   infoDescription:
-                      'The absolute sum of all your logs across all time for this habit.',
+                      'The total number of days/weeks you completed this habit',
                 ),
               ),
               const SizedBox(width: 12),

@@ -16,8 +16,7 @@ class Habits extends Table {
   TextColumn get description => text().nullable()();
   IntColumn get color => integer()();
   TextColumn get icon => text()();
-  TextColumn get frequencyType =>
-      text().withDefault(const Constant('DAILY'))();
+  TextColumn get frequencyType => text().withDefault(const Constant('DAILY'))();
   TextColumn get frequencyDays => text().nullable()();
   RealColumn get targetValue => real().withDefault(const Constant(1))();
   TextColumn get unit => text().withDefault(const Constant('times'))();
@@ -88,9 +87,7 @@ class AppDatabase extends _$AppDatabase {
           habitCompletions.value as GeneratedColumn<Object>,
         );
         await customStatement('UPDATE habits SET target_value = target_count');
-        await customStatement(
-          'UPDATE habit_completions SET value = count',
-        );
+        await customStatement('UPDATE habit_completions SET value = count');
       }
       if (from < 4) {
         await migrator.createTable(journalEntries);
@@ -105,6 +102,9 @@ class AppDatabase extends _$AppDatabase {
             ..where((h) => h.userId.equals(userId) & h.isArchived.equals(false))
             ..orderBy([(h) => OrderingTerm.asc(h.startDate)]))
           .watch();
+
+  Future<Habit?> getHabitById(int id) =>
+      (select(habits)..where((h) => h.id.equals(id))).getSingleOrNull();
 
   Future<int> insertHabit(HabitsCompanion habit) => into(habits).insert(habit);
 
@@ -129,13 +129,12 @@ class AppDatabase extends _$AppDatabase {
   ) {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
-    return (select(habitCompletions)
-          ..where(
-            (c) =>
-                c.userId.equals(userId) &
-                c.completedAt.isBiggerOrEqualValue(start) &
-                c.completedAt.isSmallerThanValue(end),
-          ))
+    return (select(habitCompletions)..where(
+          (c) =>
+              c.userId.equals(userId) &
+              c.completedAt.isBiggerOrEqualValue(start) &
+              c.completedAt.isSmallerThanValue(end),
+        ))
         .watch();
   }
 
@@ -154,10 +153,7 @@ class AppDatabase extends _$AppDatabase {
           .watch();
 
   /// Watch the single entry for a habit on a specific calendar day.
-  Stream<JournalEntry?> watchJournalEntryForDate(
-    int habitId,
-    DateTime date,
-  ) {
+  Stream<JournalEntry?> watchJournalEntryForDate(int habitId, DateTime date) {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(journalEntries)
@@ -171,10 +167,7 @@ class AppDatabase extends _$AppDatabase {
         .watchSingleOrNull();
   }
 
-  Future<JournalEntry?> getJournalEntryForDate(
-    int habitId,
-    DateTime date,
-  ) {
+  Future<JournalEntry?> getJournalEntryForDate(int habitId, DateTime date) {
     final start = DateTime(date.year, date.month, date.day);
     final end = start.add(const Duration(days: 1));
     return (select(journalEntries)

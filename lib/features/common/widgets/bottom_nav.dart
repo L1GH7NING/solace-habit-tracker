@@ -12,7 +12,7 @@ class BottomNav extends StatelessWidget {
 
   static int _indexForRoute(String location) {
     if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/stats')) return 1;
+    if (location.startsWith('/all')) return 1;
     if (location.startsWith('/add-habit')) return 2;
     if (location.startsWith('/community')) return 3;
     if (location.startsWith('/profile')) return 4;
@@ -27,7 +27,7 @@ class BottomNav extends StatelessWidget {
     final selectedIndex = _indexForRoute(location);
     final items = [
       Icons.home_rounded,
-      Icons.leaderboard_rounded,
+      Icons.list_rounded,
       Icons.add_circle_outline_rounded,
       Icons.group_rounded,
       Icons.person_rounded,
@@ -74,7 +74,7 @@ class BottomNav extends StatelessWidget {
                         onTap: () {
                           switch (i) {
                             case 0: context.go('/home');
-                            case 1: context.go('/stats');
+                            case 1: context.go('/all');
                             case 2: context.go('/add-habit');
                             case 3: context.go('/community');
                             case 4: context.go('/profile');

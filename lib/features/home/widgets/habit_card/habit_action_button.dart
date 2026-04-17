@@ -40,6 +40,7 @@ class HabitActionButton extends StatelessWidget {
                     : LucideIcons.check)
                 : LucideIcons.penLine,
             key: ValueKey(isUndoVisible),
+            size: 20,
             color: Colors.white,
           ),
         ),

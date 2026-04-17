@@ -49,6 +49,9 @@ class HabitCardContent extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(
+            18,
+          ), // Added matching border radius here
           border: Border(left: BorderSide(color: habitColor, width: 4)),
         ),
         child: Row(
@@ -94,12 +97,23 @@ class HabitCardContent extends StatelessWidget {
                   const SizedBox(height: 6),
 
                   if (isDone)
-                    Text(
-                      'COMPLETED',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurfaceVariant,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: habitColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        'COMPLETED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: habitColor,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     )
                   else
@@ -113,8 +127,7 @@ class HabitCardContent extends StatelessWidget {
                               minHeight: 4,
                               backgroundColor:
                                   theme.colorScheme.secondaryContainer,
-                              valueColor:
-                                  AlwaysStoppedAnimation(habitColor),
+                              valueColor: AlwaysStoppedAnimation(habitColor),
                             ),
                           ),
                         ),
