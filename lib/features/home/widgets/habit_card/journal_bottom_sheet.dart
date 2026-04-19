@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
@@ -139,7 +140,10 @@ class _JournalBottomSheetState extends State<JournalBottomSheet> {
 
   Future<void> _handleDelete() async {
     await widget.journalService.deleteEntry(_existingEntry!.id);
-    if (mounted) Navigator.pop(context);
+    if (mounted) {
+        context.pop();
+        showAppSnackBar(context, "Journal Deleted", type: SnackBarType.warning);
+      }
   }
 
   // ── Mood selector row ───────────────────────────────────────────────────────

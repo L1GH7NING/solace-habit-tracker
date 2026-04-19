@@ -40,10 +40,17 @@ class _HomePageState extends State<HomePage> {
   Stream<List<HabitCompletion>>? _dailyCompletionsStream;
   Stream<List<HabitCompletion>>? _weeklyCompletionsStream;
   DateTime? _memoizedDate;
+  late final HabitService _habitService;
 
   // Cached weekday map for O(1) lookups during filtering
   static const Map<int, String> _weekdayMap = {
-    1: 'MON', 2: 'TUE', 3: 'WED', 4: 'THU', 5: 'FRI', 6: 'SAT', 7: 'SUN',
+    1: 'MON',
+    2: 'TUE',
+    3: 'WED',
+    4: 'THU',
+    5: 'FRI',
+    6: 'SAT',
+    7: 'SUN',
   };
 
   @override
@@ -55,13 +62,20 @@ class _HomePageState extends State<HomePage> {
     _selectedDate = _today;
     _datesList = List.generate(
       61,
-      (index) => now.subtract(const Duration(days: 30)).add(Duration(days: index)),
+      (index) =>
+          now.subtract(const Duration(days: 30)).add(Duration(days: index)),
     );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_habitsStream == null) {
+      _habitService = HabitService(
+        Provider.of<AppDatabase>(context, listen: false),
+      );
+      _habitsStream = _habitService.watchHabits(_userId);
+    }
     _streakSubscription ??= StatsService(
       Provider.of<AppDatabase>(context, listen: false),
     ).watchPerfectStreak(_userId).listen(_handleStreakUpdate);
@@ -111,11 +125,15 @@ class _HomePageState extends State<HomePage> {
       date.subtract(Duration(days: date.weekday - 1));
 
   bool _applies(Habit h, DateTime d) {
-    final habitStartDay = DateTime(h.startDate.year, h.startDate.month, h.startDate.day);
+    final habitStartDay = DateTime(
+      h.startDate.year,
+      h.startDate.month,
+      h.startDate.day,
+    );
     final checkDay = DateTime(d.year, d.month, d.day);
-    
+
     if (checkDay.isBefore(habitStartDay)) return false;
-  
+
     if (h.frequencyDays == null || h.frequencyDays!.isEmpty) return true;
     return h.frequencyDays!.toUpperCase().contains(_weekdayMap[d.weekday]!);
   }
@@ -124,19 +142,21 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final userProvider = context.watch<UserProvider>();
-    final appDb = Provider.of<AppDatabase>(context, listen: false);
-    final habitService = HabitService(appDb);
+    final userName = userProvider.name;
+    final avatar = userProvider.avatar;
 
     final bool canLog = !_selectedDate.isAfter(_today);
     final bool canJournal = !_selectedDate.isAfter(_today);
 
-    // 1. Memoize Habits Stream (Only created once)
-    _habitsStream ??= habitService.watchHabits(_userId);
-
-    // 2. Memoize Completion Streams (Only update when the date actually changes)
     if (_memoizedDate != _selectedDate) {
-      _dailyCompletionsStream = habitService.watchCompletionsForDate(_userId, _selectedDate);
-      _weeklyCompletionsStream = habitService.watchCompletionsForDate(_userId, _getStartOfWeek(_selectedDate));
+      _dailyCompletionsStream = _habitService.watchCompletionsForDate(
+        _userId,
+        _selectedDate,
+      );
+      _weeklyCompletionsStream = _habitService.watchCompletionsForDate(
+        _userId,
+        _getStartOfWeek(_selectedDate),
+      );
       _memoizedDate = _selectedDate;
     }
 
@@ -144,8 +164,8 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // PERFORMANCE FIX: RepaintBoundary forces Flutter to render these expensive blurs 
-          // into an offline image cache. Now, during page transitions, Flutter just moves 
+          // PERFORMANCE FIX: RepaintBoundary forces Flutter to render these expensive blurs
+          // into an offline image cache. Now, during page transitions, Flutter just moves
           // the cached image instead of recalculating the blur on every frame.
           RepaintBoundary(
             child: Stack(
@@ -177,8 +197,8 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: 20),
                   GreetingWidget(
-                    name: userProvider.name,
-                    avatar: userProvider.avatar,
+                    name: userName,
+                    avatar: avatar,
                   ),
                   const SizedBox(height: 20),
                   DateStrip(
@@ -188,14 +208,26 @@ class _HomePageState extends State<HomePage> {
                     onDateSelected: (d) => setState(() => _selectedDate = d),
                   ),
                   const SizedBox(height: 20),
-                  
+
                   // Use the memoized streams safely
                   StreamBuilder<List<Habit>>(
                     stream: _habitsStream,
                     builder: (context, hSnap) {
                       final all = hSnap.data ?? [];
-                      final daily = all.where((h) => h.frequencyType == 'DAILY' && _applies(h, _selectedDate)).toList();
-                      final weekly = all.where((h) => h.frequencyType == 'WEEKLY' && _applies(h, _selectedDate)).toList();
+                      final daily = all
+                          .where(
+                            (h) =>
+                                h.frequencyType == 'DAILY' &&
+                                _applies(h, _selectedDate),
+                          )
+                          .toList();
+                      final weekly = all
+                          .where(
+                            (h) =>
+                                h.frequencyType == 'WEEKLY' &&
+                                _applies(h, _selectedDate),
+                          )
+                          .toList();
 
                       if (daily.isEmpty && weekly.isEmpty) {
                         return EmptyState(
@@ -229,7 +261,9 @@ class _HomePageState extends State<HomePage> {
                                       weeklyHabits: weekly,
                                       weeklyCompletions: wComp.data ?? [],
                                       userId: _userId,
-                                      weekStartDate: _getStartOfWeek(_selectedDate),
+                                      weekStartDate: _getStartOfWeek(
+                                        _selectedDate,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -248,8 +282,8 @@ class _HomePageState extends State<HomePage> {
 
           TopCelebrationBanner(
             visible: _showBanner,
-            title: "Great Job!",
-            message: "You completed all habits for today",
+            title: "Nice work, $userName!",
+            message: "All habits completed today",
             // animationSeed: _lastStreakCount ?? 0,
           ),
         ],

@@ -99,11 +99,17 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
 
     final newDateKey = _dateKey(widget.selectedDate);
     final dateChanged = newDateKey != _lastDateKey;
-    final habitsChanged = _habitsListChanged(old.dailyHabits, widget.dailyHabits);
+    final habitsChanged = _habitsListChanged(
+      old.dailyHabits,
+      widget.dailyHabits,
+    );
 
     if (dateChanged || habitsChanged) {
       setState(() {
-        _stableOrder = _initialSort(widget.dailyHabits, widget.dailyCompletions);
+        _stableOrder = _initialSort(
+          widget.dailyHabits,
+          widget.dailyCompletions,
+        );
         _lastDateKey = newDateKey;
       });
       return;
@@ -121,8 +127,8 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
 
   bool _habitsListChanged(List<Habit> old, List<Habit> next) {
     if (old.length != next.length) return true;
-    final oldIds = old.map((h) => h.id).toSet();
-    return !next.every((h) => oldIds.contains(h.id));
+    final oldMap = {for (final h in old) h.id: h.updatedAt};
+    return next.any((h) => oldMap[h.id] != h.updatedAt);
   }
 
   bool _completionsChanged(
@@ -138,19 +144,18 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     List<Habit> habits,
     List<HabitCompletion> completions,
   ) {
-    return List<Habit>.from(habits)
-      ..sort((a, b) {
-        final isCompletedA = _progressFor(a, completions) >= a.targetValue;
-        final isCompletedB = _progressFor(b, completions) >= b.targetValue;
-        if (isCompletedA != isCompletedB) return isCompletedA ? 1 : -1;
+    return List<Habit>.from(habits)..sort((a, b) {
+      final isCompletedA = _progressFor(a, completions) >= a.targetValue;
+      final isCompletedB = _progressFor(b, completions) >= b.targetValue;
+      if (isCompletedA != isCompletedB) return isCompletedA ? 1 : -1;
 
-        final timeA = a.habitTime;
-        final timeB = b.habitTime;
-        if (timeA == null && timeB == null) return 0;
-        if (timeA == null) return 1;
-        if (timeB == null) return -1;
-        return timeA.compareTo(timeB);
-      });
+      final timeA = a.habitTime;
+      final timeB = b.habitTime;
+      if (timeA == null && timeB == null) return 0;
+      if (timeA == null) return 1;
+      if (timeB == null) return -1;
+      return timeA.compareTo(timeB);
+    });
   }
 
   double _progressFor(Habit habit, List<HabitCompletion> completions) =>

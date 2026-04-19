@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:zenith_habit_tracker/core/theme/app_colors.dart';
 
 class TopCelebrationBanner extends StatelessWidget {
   final bool visible;
@@ -27,7 +26,7 @@ class TopCelebrationBanner extends StatelessWidget {
         child: SafeArea(
           bottom: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: AnimatedSlide(
               duration: const Duration(milliseconds: 400),
               curve: Curves.easeOutCubic,
@@ -41,26 +40,28 @@ class TopCelebrationBanner extends StatelessWidget {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    // 👇 uses your design system instead of random green
-                    color: AppColors.secondaryContainer,
+                    // 🌿 DARK success background
+                    color: const Color(0xFF16A34A),
 
-                    borderRadius: BorderRadius.circular(26),
+                    borderRadius: BorderRadius.circular(24),
 
+                    // subtle border (almost invisible, adds polish)
                     border: Border.all(
-                      color: AppColors.primary.withOpacity(0.35),
+                      color: Colors.white.withOpacity(0.08),
                     ),
 
+                    // deeper shadow for contrast
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(0.18),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
-                      _Icon(),
+                      const _Icon(),
 
                       const SizedBox(width: 12),
 
@@ -75,7 +76,7 @@ class TopCelebrationBanner extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
+                                color: Colors.white, // 👈 light text
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -84,9 +85,9 @@ class TopCelebrationBanner extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
+                                color: Colors.white.withOpacity(0.85), // 👈 softer light
                                 fontWeight: FontWeight.w400,
-                                letterSpacing: -0.2
+                                letterSpacing: -0.2,
                               ),
                             ),
                           ],
@@ -105,6 +106,8 @@ class TopCelebrationBanner extends StatelessWidget {
 }
 
 class _Icon extends StatelessWidget {
+  const _Icon();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -112,13 +115,14 @@ class _Icon extends StatelessWidget {
       height: 34,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.12),
+        // 👇 lighter green bubble for contrast
+        color: Colors.white.withOpacity(0.15),
         shape: BoxShape.circle,
       ),
       child: SvgPicture.asset(
-        'assets/svgs/check.svg', // 👈 better than fire for subtle UX
+        'assets/svgs/check.svg',
         colorFilter: const ColorFilter.mode(
-          AppColors.primary,
+          Colors.white, // 👈 white icon pops nicely
           BlendMode.srcIn,
         ),
       ),

@@ -1,104 +1,97 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:zenith_habit_tracker/core/theme/app_theme.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return Theme(
+      data: AppTheme.lightTheme, // 👈 force your actual light theme
+      child: Builder(
+        builder: (context) {
+          final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          // 🔮 Background Blobs
-          Positioned(
-            top: 120,
-            left: -80,
-            child: _blurCircle(
-              theme.colorScheme.primary.withOpacity(0.15),
-              250,
-            ),
-          ),
-          Positioned(
-            bottom: 120,
-            right: -80,
-            child: _blurCircle(
-              theme.colorScheme.secondary.withOpacity(0.2),
-              300,
-            ),
-          ),
-
-          // 📱 Main Content
-          Column(
-            children: [
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 80, 24, 0),
-                    child: Column(
-                      children: [
-                        // 🎬 Lottie Animation
-                        Center(child: _lottieAnimation()),
-
-                        const SizedBox(height: 40),
-
-                        // 🧠 Headline
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              const TextSpan(text: "Build healthy "),
-                              TextSpan(
-                                text: "habits",
-                                style: TextStyle(
-                                  color: theme.colorScheme.primary,
-                                ),
-                              ),
-                              const TextSpan(text: " with Solace"),
-                            ],
-                          ),
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.headlineLarge,
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // 📝 Subtitle
-                        Text(
-                          "Consistency is key. We'll help you get there.",
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium,
-                        ),
-
-                        const SizedBox(height: 40),
-
-                        // 🚀 Primary Button
-                        _primaryButton(context),
-
-                        const SizedBox(height: 16),
-                      ],
-                    ),
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            body: Stack(
+              children: [
+                // 🔮 Background Blobs
+                Positioned(
+                  top: 120,
+                  left: -80,
+                  child: _blurCircle(
+                    theme.colorScheme.primary.withOpacity(0.15),
+                    250,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+                Positioned(
+                  bottom: 120,
+                  right: -80,
+                  child: _blurCircle(
+                    theme.colorScheme.secondary.withOpacity(0.2),
+                    300,
+                  ),
+                ),
 
-  // 🎬 Lottie Animation
-  Widget _lottieAnimation() {
-    return SizedBox(
-      height: 260,
-      width: 260,
-      child: Lottie.asset(
-        "assets/animations/Cycling.json",
-        fit: BoxFit.contain,
+                // 📱 Main Content
+                Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
+                          child: Column(
+                            children: [
+                              SvgPicture.asset(
+                                "assets/images/pushups.svg",
+                                // height: 220,
+                              ),
+
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    const TextSpan(text: "Build healthy "),
+                                    TextSpan(
+                                      text: "habits",
+                                      style: TextStyle(
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    ),
+                                    const TextSpan(text: " with Solace"),
+                                  ],
+                                ),
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.headlineLarge,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              Text(
+                                "Consistency is key. We'll help you get there.",
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium,
+                              ),
+
+                              const SizedBox(height: 40),
+
+                              _primaryButton(context),
+
+                              const SizedBox(height: 16),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

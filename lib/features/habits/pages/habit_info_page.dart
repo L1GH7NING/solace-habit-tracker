@@ -166,20 +166,12 @@ class _HabitInfoPageState extends State<HabitInfoPage> {
       reminderMinutes = (habitMinutes - _selectedReminderOffset).clamp(0, 1440);
     }
 
-    final success = await _controller!.saveHabit(
+    await _controller!.saveHabit(
       habitTime: habitMinutes,
       reminderTime: reminderMinutes,
     );
 
     if (!mounted) return;
-
-    if (success) {
-      showAppSnackBar(
-        context,
-        'Habit updated successfully!',
-        type: SnackBarType.success,
-      );
-    }
   }
 
   @override

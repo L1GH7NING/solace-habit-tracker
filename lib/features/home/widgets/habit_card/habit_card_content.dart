@@ -34,6 +34,7 @@ class HabitCardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final title = habit.title[0].toUpperCase() + habit.title.substring(1);
 
     final progressText = currentProgress.toStringAsFixed(
       currentProgress.truncateToDouble() == currentProgress ? 0 : 1,
@@ -77,7 +78,7 @@ class HabitCardContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    habit.title,
+                    title,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w800,

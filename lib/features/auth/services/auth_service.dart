@@ -7,6 +7,7 @@ class AuthService {
 
   static User? get currentUser => _auth.currentUser;
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
+  static const bool forceOnboarding = true; //REMOVE FOR PROD
 
   // 🔐 Email & Password Sign Up
   static Future<AuthResult> signUpWithEmail({
@@ -81,6 +82,8 @@ class AuthService {
 
   // 🏁 Has the user been through onboarding before?
   static Future<bool> hasLaunched() async {
+    if (forceOnboarding) return false;
+    
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('has_launched') ?? false;
   }
