@@ -55,9 +55,6 @@ class StatsService {
     DateTime start = _dateOnly(habit.startDate);
     if (habit.frequencyType == 'WEEKLY') start = _startOfWeek(start);
 
-    final totalDone =
-        completions.fold<double>(0, (sum, c) => sum + c.value).toInt();
-
     final progressMap = <DateTime, double>{};
     for (var c in completions) {
       final d = _dateOnly(c.completedAt);
@@ -109,6 +106,8 @@ class StatsService {
         if (!isGracePeriod(date)) tempStreak = 0;
       }
     }
+
+    final totalDone = daysMetTarget;
 
     int currentStreak = 0;
     for (int i = applicableDates.length - 1; i >= 0; i--) {

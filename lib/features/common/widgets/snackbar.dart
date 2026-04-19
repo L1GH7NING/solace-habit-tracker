@@ -34,30 +34,46 @@ void showAppSnackBar(
 
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Row(
-        children: [
-          Icon(iconData, color: Colors.white),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
+      elevation: 0,
       behavior: SnackBarBehavior.floating,
-      backgroundColor: backgroundColor, // Use the dynamic color
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: backgroundColor,
+      duration: const Duration(seconds: 1),
+
       margin: EdgeInsets.only(
         left: 20,
         right: 20,
         bottom: MediaQuery.of(context).padding.bottom + 4,
       ),
-      duration: const Duration(seconds: 1),
+
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12), // slightly tighter
+      ),
+
+      content: Row(
+        mainAxisSize: MainAxisSize.min, // 👈 important
+        children: [
+          Icon(iconData, color: Colors.white, size: 18), // 👈 smaller icon
+          const SizedBox(width: 8), // 👈 tighter spacing
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500, // less bulky
+                fontSize: 13, // 👈 smaller text
+                height: 1.2, // 👈 tighter line height
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 12, // 👈 THIS reduces height the most
+      ),
     ),
   );
 }

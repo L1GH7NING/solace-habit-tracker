@@ -13,7 +13,6 @@ class CreateHabitView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ADDED SingleChildScrollView here, matching EditHabitView
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -27,10 +26,13 @@ class CreateHabitView extends StatelessWidget {
             onTap: access.showAppearancePicker,
           ),
           const SizedBox(height: 24),
-      
+
           Center(
             child: FilledButton.tonalIcon(
               onPressed: access.showPresetPicker,
+              icon: const Icon(
+                Icons.auto_awesome,
+              ), // Good practice to include an icon if using .tonalIcon
               label: const Text('Choose from a Preset'),
               style: FilledButton.styleFrom(
                 backgroundColor: access.accentColor.withOpacity(0.15),
@@ -46,7 +48,7 @@ class CreateHabitView extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 32),
-      
+
           const SectionLabel(label: "WHAT'S YOUR NEW GOAL?"),
           const SizedBox(height: 10),
           HabitNameInput(controller: access.controller.titleController),
@@ -65,7 +67,7 @@ class CreateHabitView extends StatelessWidget {
                   access.rebuild();
                 },
               ),
-      
+
               AnimatedSize(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.fastOutSlowIn,
@@ -88,9 +90,9 @@ class CreateHabitView extends StatelessWidget {
                       : const SizedBox.shrink(key: ValueKey('empty_picker')),
                 ),
               ),
-      
+
               const SizedBox(height: 16),
-      
+
               DailyGoalSelector(
                 accentColor: access.accentColor,
                 habitName: access.controller.titleController.text,
@@ -148,13 +150,13 @@ class CreateHabitView extends StatelessWidget {
               },
             ),
           ],
-      
+
           const SizedBox(height: 28),
           PrimaryGradientButton(
             text: 'Create Habit',
             onPressed: access.handleSave,
           ),
-          const SizedBox(height: 160),
+          const SizedBox(height: 160), // Keep padding for bottom scrolling
         ],
       ),
     );

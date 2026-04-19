@@ -3,7 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
-import 'package:zenith_habit_tracker/features/home/widgets/habit_card.dart';
+import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
+import 'package:zenith_habit_tracker/features/home/widgets/habit_card/habit_card.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/section_header.dart';
 
 class WeeklyHabitsSection extends StatelessWidget {
@@ -26,9 +27,12 @@ class WeeklyHabitsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appDb = Provider.of<AppDatabase>(context, listen: false);
     final habitService = HabitService(
-      Provider.of<AppDatabase>(context, listen: false),
+      appDb,
     );
+
+    final journalService = JournalService(appDb);
 
     // Check if all weekly habits in this list are finished
     final allDone =
@@ -45,7 +49,7 @@ class WeeklyHabitsSection extends StatelessWidget {
             key: ValueKey('weekly_${habit.id}_$weekStartDate'),
             habit: habit,
             currentProgress: _progressFor(habit),
-            onTap: () => context.push('/edit-habit', extra: habit),
+            onTap: () => context.push('/habit-info/${habit.id}'),
             onLog: (v) => habitService.logCompletionForDate(
               habitId: habit.id,
               userId: userId,
@@ -57,6 +61,8 @@ class WeeklyHabitsSection extends StatelessWidget {
               userId: userId,
               date: weekStartDate,
             ),
+            selectedDate: DateTime.now(),
+            journalService: journalService,
           ),
         ),
         if (allDone) const AllWeeklyCompletedMessage(),

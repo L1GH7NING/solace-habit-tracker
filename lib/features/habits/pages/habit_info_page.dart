@@ -1,5 +1,3 @@
-// lib/features/habits/views/edit_habit_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
@@ -7,20 +5,22 @@ import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/edit_habit_controller.dart';
+import 'package:zenith_habit_tracker/features/habits/views/habit_journal_view.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/edit_habit_bottom_nav.dart';
 import 'package:zenith_habit_tracker/features/habits/views/edit_habit_view.dart';
 import 'package:zenith_habit_tracker/features/habits/views/habits_stats_view.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/appearance_bottom_sheet.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/habit_constants.dart';
+import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
 import 'package:zenith_habit_tracker/features/utils/utils.dart';
 
-class EditHabitPage extends StatefulWidget {
-  final Habit habit;
+class HabitInfoPage extends StatefulWidget {
+  final String habitId;
 
-  const EditHabitPage({super.key, required this.habit});
+  const HabitInfoPage({super.key, required this.habitId});
 
   @override
-  State<EditHabitPage> createState() => _EditHabitPageState();
+  State<HabitInfoPage> createState() => _HabitInfoPageState();
 }
 
 class EditHabitPageStateAccess {
@@ -61,15 +61,20 @@ class EditHabitPageStateAccess {
   });
 }
 
-class _EditHabitPageState extends State<EditHabitPage> {
-  late final EditHabitController _controller;
-
-  // ADDED: PageController to manage the swiping
+class _HabitInfoPageState extends State<HabitInfoPage> {
+  late final AppDatabase _db;
   late final PageController _pageController;
-  int _selectedIndex = 0; // Default to stats view
+  late final JournalService _journalService;
 
-  late TimeOfDay _selectedTime;
-  late bool _hasTime;
+  EditHabitController? _controller;
+  Habit? _habit;
+  bool _loading = true;
+  String? _error;
+
+  int _selectedIndex = 1;
+
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 8, minute: 30);
+  bool _hasTime = false;
   bool _reminderEnabled = false;
   int _selectedReminderOffset = 15;
   final List<int> _reminderOptions = [5, 10, 15, 30, 60];
@@ -77,52 +82,82 @@ class _EditHabitPageState extends State<EditHabitPage> {
   @override
   void initState() {
     super.initState();
-    final db = Provider.of<AppDatabase>(context, listen: false);
-    _controller = EditHabitController(
-      context: context,
-      db: db,
-      habit: widget.habit,
-    );
-
-    // ADDED: Initialize the PageController with the starting index
+    _db = Provider.of<AppDatabase>(context, listen: false);
+    _journalService = JournalService(_db);
     _pageController = PageController(initialPage: _selectedIndex);
+    _loadHabit();
+  }
 
-    if (widget.habit.habitTime != null) {
-      _hasTime = true;
-      _selectedTime = Utilities.minutesToTimeOfDay(widget.habit.habitTime!);
-    } else {
-      _hasTime = false;
-      _selectedTime = const TimeOfDay(hour: 8, minute: 30);
+  Future<void> _loadHabit() async {
+    try {
+      final habit = await _db.getHabitById(int.parse(widget.habitId));
+      if (habit == null) {
+        setState(() {
+          _error = 'Habit not found.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final controller = EditHabitController(
+        context: context,
+        db: _db,
+        habit: habit,
+      );
+
+      TimeOfDay selectedTime = const TimeOfDay(hour: 8, minute: 30);
+      bool hasTime = false;
+      if (habit.habitTime != null) {
+        hasTime = true;
+        selectedTime = Utilities.minutesToTimeOfDay(habit.habitTime!);
+      }
+
+      if (mounted) {
+        setState(() {
+          _habit = habit;
+          _controller = controller;
+          _selectedTime = selectedTime;
+          _hasTime = hasTime;
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = 'Failed to load habit.';
+          _loading = false;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    // ADDED: Dispose the PageController to prevent memory leaks
+    _controller?.dispose();
     _pageController.dispose();
     super.dispose();
   }
 
   void _rebuild() => setState(() {});
+
   Color get _accent =>
-      AdaptiveColors.accent(context, Color(_controller.selectedColor));
+      AdaptiveColors.accent(context, Color(_controller!.selectedColor));
 
   IconData get _currentIconData {
     return iconOptions
         .firstWhere(
-          (opt) => opt.id == _controller.selectedIcon,
+          (opt) => opt.id == _controller!.selectedIcon,
           orElse: () => iconOptions.first,
         )
         .icon;
   }
 
   void _showAppearancePicker() {
-    showAppearancePicker(context, controller: _controller, onUpdate: _rebuild);
+    showAppearancePicker(context, controller: _controller!, onUpdate: _rebuild);
   }
 
   void _handleSave() async {
-    int? habitMinutes = _hasTime
+    final habitMinutes = _hasTime
         ? Utilities.timeToMinutes(_selectedTime)
         : null;
 
@@ -131,30 +166,36 @@ class _EditHabitPageState extends State<EditHabitPage> {
       reminderMinutes = (habitMinutes - _selectedReminderOffset).clamp(0, 1440);
     }
 
-    final success = await _controller.saveHabit(
+    await _controller!.saveHabit(
       habitTime: habitMinutes,
       reminderTime: reminderMinutes,
     );
 
     if (!mounted) return;
-
-    if (success) {
-      showAppSnackBar(
-        context,
-        'Habit updated successfully!',
-        type: SnackBarType.success,
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Create an access object to pass state and methods to child views
+    // ── Loading ──────────────────────────────────────────────────────────────
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // ── Error ────────────────────────────────────────────────────────────────
+    if (_error != null || _habit == null || _controller == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text(_error ?? 'Something went wrong.')),
+      );
+    }
+
+    final habit = _habit!;
+
     final access = EditHabitPageStateAccess(
-      controller: _controller,
-      habit: widget.habit,
+      controller: _controller!,
+      habit: habit,
       accentColor: _accent,
       currentIconData: _currentIconData,
       selectedTime: _selectedTime,
@@ -179,7 +220,11 @@ class _EditHabitPageState extends State<EditHabitPage> {
       appBar: AppBar(
         toolbarHeight: 70,
         title: Text(
-          _selectedIndex == 0 ? 'Statistics' : 'Edit Habit',
+          _selectedIndex == 0
+              ? 'Journals'
+              : _selectedIndex == 1
+              ? 'Statistics'
+              : 'Edit Habit',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w800,
@@ -193,33 +238,40 @@ class _EditHabitPageState extends State<EditHabitPage> {
       ),
       body: Stack(
         children: [
-          Positioned(
-            top: 100,
-            left: -80,
-            child: BlurCircle(
-              color: theme.colorScheme.primary.withOpacity(0.08),
-              size: 260,
-            ),
-          ),
-          Positioned(
-            bottom: 160,
-            right: -80,
-            child: BlurCircle(
-              color: theme.colorScheme.secondary.withOpacity(0.1),
-              size: 300,
+          RepaintBoundary(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 120,
+                  left: -80,
+                  child: BlurCircle(
+                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    size: 260,
+                  ),
+                ),
+                Positioned(
+                  bottom: 120,
+                  right: -80,
+                  child: BlurCircle(
+                    color: theme.colorScheme.secondary.withOpacity(0.12),
+                    size: 300,
+                  ),
+                ),
+              ],
             ),
           ),
           SafeArea(
             bottom: false,
-            // CHANGED: Replaced IndexedStack with PageView for swiping support
             child: PageView(
               controller: _pageController,
-              onPageChanged: (index) {
-                // Update the bottom nav index when the user swipes
-                setState(() => _selectedIndex = index);
-              },
+              onPageChanged: (index) => setState(() => _selectedIndex = index),
               children: [
-                HabitStatsView(accentColor: _accent, habit: widget.habit),
+                HabitJournalView(
+                  accentColor: Color(_habit!.color),
+                  habitId: int.parse(widget.habitId),
+                  journalService: _journalService,
+                ),
+                HabitStatsView(accentColor: _accent, habit: habit),
                 EditHabitView(access: access),
               ],
             ),
@@ -229,7 +281,6 @@ class _EditHabitPageState extends State<EditHabitPage> {
       bottomNavigationBar: EditHabitBottomNav(
         selectedIndex: _selectedIndex,
         onTap: (index) {
-          // Animate the PageView when a bottom nav item is tapped
           _pageController.animateToPage(
             index,
             duration: const Duration(milliseconds: 300),

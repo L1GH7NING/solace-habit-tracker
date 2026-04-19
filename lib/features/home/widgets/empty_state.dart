@@ -5,8 +5,14 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 class EmptyState extends StatelessWidget {
   final String message;
   final ThemeData theme;
+  final bool showCTA; // 👈 new
 
-  const EmptyState({super.key, required this.message, required this.theme});
+  const EmptyState({
+    super.key,
+    required this.message,
+    required this.theme,
+    this.showCTA = true, // default keeps old behavior
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +23,6 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 1. Visual Anchor: A large, decorative icon in a container
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -25,14 +30,13 @@ class EmptyState extends StatelessWidget {
                 color: theme.colorScheme.secondaryContainer,
               ),
               child: Icon(
-                LucideIcons.rabbit, // A friendly and relevant icon
+                LucideIcons.rabbit,
                 size: 64,
                 color: theme.colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 24),
 
-            // 2. Clear Typography: Headline and sub-headline
             Text(
               "It's a bit empty here...",
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -40,6 +44,7 @@ class EmptyState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
+
             Text(
               message,
               textAlign: TextAlign.center,
@@ -47,44 +52,46 @@ class EmptyState extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+
             const SizedBox(height: 32),
 
-            // 3. Strong Call to Action (CTA)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.go('/add-habit'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  padding: EdgeInsets.zero,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(40),
-                  ),
-                ),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.secondary,
-                      ],
+            // 👇 Only show button if allowed
+            if (showCTA)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.go('/add-habit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    padding: EdgeInsets.zero,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(40),
                     ),
-                    borderRadius: BorderRadius.circular(40),
                   ),
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    child: Text(
-                      'Add Your First Habit',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          theme.colorScheme.primary,
+                          theme.colorScheme.secondary,
+                        ],
                       ),
-                    ), // <-- USE THE TEXT PROPERTY
+                      borderRadius: BorderRadius.circular(40),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      child: Text(
+                        'Add Your First Habit',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

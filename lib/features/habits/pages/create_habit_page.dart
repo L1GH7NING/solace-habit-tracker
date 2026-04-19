@@ -10,7 +10,7 @@ import 'package:zenith_habit_tracker/features/habits/controllers/create_habit_co
 import 'package:zenith_habit_tracker/features/habits/views/create_habit_view.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/appearance_bottom_sheet.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/habit_constants.dart';
-import 'package:zenith_habit_tracker/features/habits/widgets/habit_preset_bottom_sheet.dart'; // 🔥 Import the new sheet
+import 'package:zenith_habit_tracker/features/habits/widgets/habit_preset_bottom_sheet.dart';
 import 'package:zenith_habit_tracker/features/utils/utils.dart';
 
 class CreateHabitPage extends StatefulWidget {
@@ -36,7 +36,7 @@ class CreateHabitPageStateAccess {
   final Function(bool) setReminderEnabled;
   final Function(int) setSelectedReminderOffset;
   final Function() showAppearancePicker;
-  final Function() showPresetPicker; // 🔥 Add this
+  final Function() showPresetPicker;
 
   CreateHabitPageStateAccess({
     required this.controller,
@@ -54,7 +54,7 @@ class CreateHabitPageStateAccess {
     required this.setReminderEnabled,
     required this.setSelectedReminderOffset,
     required this.showAppearancePicker,
-    required this.showPresetPicker, // 🔥 Add this
+    required this.showPresetPicker,
   });
 }
 
@@ -65,7 +65,13 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
   bool _hasTime = false;
   bool _reminderEnabled = false;
   int _selectedReminderOffset = 15;
-  final List<int> _reminderOptions = [5, 10, 15, 30, 60];
+  static const List<int> _reminderOptions = [
+    5,
+    10,
+    15,
+    30,
+    60,
+  ]; // PERFORMANCE: Made this static const
 
   @override
   void initState() {
@@ -77,34 +83,19 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
 
   @override
   void dispose() {
-    _controller.dispose();
     _controller.titleController.removeListener(_rebuild);
+    _controller.dispose();
     super.dispose();
   }
 
   void _rebuild() => setState(() {});
 
-  Color get _accent =>
-      AdaptiveColors.accent(context, Color(_controller.selectedColor));
-
-  IconData get _currentIconData {
-    return iconOptions
-        .firstWhere(
-          (opt) => opt.id == _controller.selectedIcon,
-          orElse: () => iconOptions.first,
-        )
-        .icon;
-  }
-
   void _showAppearancePicker() {
     showAppearancePicker(context, controller: _controller, onUpdate: _rebuild);
   }
 
-  // 🔥 Open the preset bottom sheet
   void _showPresetPicker() {
-    // Hide keyboard if it's open before showing bottom sheet
     FocusScope.of(context).unfocus();
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -156,10 +147,23 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Calculate these once per build instead of via getters
+    final currentIconData = iconOptions
+        .firstWhere(
+          (opt) => opt.id == _controller.selectedIcon,
+          orElse: () => iconOptions.first,
+        )
+        .icon;
+
+    final accentColor = AdaptiveColors.accent(
+      context,
+      Color(_controller.selectedColor),
+    );
+
     final access = CreateHabitPageStateAccess(
       controller: _controller,
-      accentColor: _accent,
-      currentIconData: _currentIconData,
+      accentColor: accentColor,
+      currentIconData: currentIconData,
       selectedTime: _selectedTime,
       hasTime: _hasTime,
       reminderEnabled: _reminderEnabled,
@@ -184,7 +188,7 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
         toolbarHeight: 70,
         title: Text(
           'New Habit',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: theme.textTheme.headlineMedium?.copyWith(
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
@@ -197,26 +201,31 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
       ),
       body: Stack(
         children: [
-          Positioned(
-            top: 120,
-            left: -80,
-            child: BlurCircle(
-              color: theme.colorScheme.primary.withOpacity(0.08),
-              size: 260,
+          // 🔥 PERFORMANCE FIX: RepaintBoundary isolates the heavy blurs!
+          RepaintBoundary(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: 120,
+                  left: -80,
+                  child: BlurCircle(
+                    color: theme.colorScheme.primary.withOpacity(0.08),
+                    size: 260,
+                  ),
+                ),
+                Positioned(
+                  bottom: 120,
+                  right: -80,
+                  child: BlurCircle(
+                    color: theme.colorScheme.secondary.withOpacity(0.12),
+                    size: 300,
+                  ),
+                ),
+              ],
             ),
           ),
-          Positioned(
-            bottom: 120,
-            right: -80,
-            child: BlurCircle(
-              color: theme.colorScheme.secondary.withOpacity(0.12),
-              size: 300,
-            ),
-          ),
-          SafeArea(
-            bottom: false,
-            child: CreateHabitView(access: access),
-          ),
+
+          SafeArea(bottom: false, child: CreateHabitView(access: access)),
         ],
       ),
     );

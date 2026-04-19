@@ -53,6 +53,7 @@ dependencies:
   fl_chart: ^1.2.0
   intl: ^0.20.2
   vibration: ^3.1.8
+  flutter_slidable: ^4.0.3
 
 dev_dependencies:
   flutter_test:
@@ -67,12 +68,24 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   drift_dev: ^2.22.0
   build_runner: ^2.4.0
+  flutter_native_splash: ^2.4.7
 
 flutter_launcher_icons:
   android: true
-  adaptive_icon_background: "#FBF8FE"
-  adaptive_icon_foreground: "assets/images/solace-icon-2-Photoroom.png"
-  image_path: "assets/images/solace-icon-2-Photoroom.png"
+  adaptive_icon_background: "assets/icons/solace-background.png"
+  adaptive_icon_foreground: "assets/icons/play_store_512.png"
+  image_path: "assets/icons/play_store_512.png"
+
+flutter_native_splash:
+  color: "#5D5FEF"   # your primary color
+  image: assets/icons/solace-foreground.png
+
+  android: true
+  ios: true
+
+  android_12:
+    image: assets/icons/solace-foreground.png
+    color: "#5D5FEF"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

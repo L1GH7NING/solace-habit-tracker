@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show Value, ComparableExpr, BooleanExpressionOperators;
+import 'package:drift/drift.dart' show Value, ComparableExpr, BooleanExpressionOperators, OrderingTerm;
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 
 
@@ -15,6 +15,12 @@ class HabitService {
     String userId,
     DateTime date,
   ) => _db.watchCompletionsForDate(userId, date);
+
+  Future<List<Habit>> getHabits(String userId) =>
+    (_db.select(_db.habits)
+      ..where((h) => h.userId.equals(userId) & h.isArchived.equals(false))
+      ..orderBy([(h) => OrderingTerm.asc(h.startDate)]))
+    .get(); // .get() not .watch()
 
   // Method for logging a completion.
   // The UI doesn't need to know about `HabitCompletionsCompanion`.

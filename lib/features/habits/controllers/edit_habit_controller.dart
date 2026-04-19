@@ -176,7 +176,13 @@ class EditHabitController implements HabitControllerBase {
         ),
       );
 
-      if (context.mounted) context.pop();
+      if (context.mounted) {
+        showAppSnackBar(
+          context,
+          'Habit updated successfully!',
+          type: SnackBarType.success,
+        );
+      }
       return true;
     } catch (e) {
       _showError('Failed to update habit.');
@@ -202,7 +208,12 @@ class EditHabitController implements HabitControllerBase {
     );
 
     if (confirmed == true && context.mounted) {
-      context.pop();
+      showAppSnackBar(
+        context,
+        'Habit Deleted',
+        type: SnackBarType.warning,
+      );
+      context.go("/home");
     }
   }
 

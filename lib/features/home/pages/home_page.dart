@@ -7,7 +7,7 @@ import 'package:vibration/vibration.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
-import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart'; // Ensure this is imported
+import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/daily_habits_section.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/date_strip.dart';
@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
   late final String _userId;
   late DateTime _selectedDate;
   late DateTime _today;
-  late List<DateTime> _weekDays;
+  late List<DateTime> _datesList;
 
   // Banner State
   bool _showBanner = false;
@@ -35,23 +35,47 @@ class _HomePageState extends State<HomePage> {
   Timer? _bannerTimer;
   StreamSubscription<PerfectStreakResult>? _streakSubscription;
 
+  // Stream Memoization (Prevents rebuilding streams on every frame)
+  Stream<List<Habit>>? _habitsStream;
+  Stream<List<HabitCompletion>>? _dailyCompletionsStream;
+  Stream<List<HabitCompletion>>? _weeklyCompletionsStream;
+  DateTime? _memoizedDate;
+  late final HabitService _habitService;
+
+  // Cached weekday map for O(1) lookups during filtering
+  static const Map<int, String> _weekdayMap = {
+    1: 'MON',
+    2: 'TUE',
+    3: 'WED',
+    4: 'THU',
+    5: 'FRI',
+    6: 'SAT',
+    7: 'SUN',
+  };
+
   @override
   void initState() {
     super.initState();
     _userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
-    _today = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
+    final now = DateTime.now();
+    _today = DateTime(now.year, now.month, now.day);
     _selectedDate = _today;
-    _weekDays = List.generate(7, (i) => _today.subtract(Duration(days: 6 - i)));
+    _datesList = List.generate(
+      61,
+      (index) =>
+          now.subtract(const Duration(days: 30)).add(Duration(days: index)),
+    );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize the stream listener here to access Provider
+    if (_habitsStream == null) {
+      _habitService = HabitService(
+        Provider.of<AppDatabase>(context, listen: false),
+      );
+      _habitsStream = _habitService.watchHabits(_userId);
+    }
     _streakSubscription ??= StatsService(
       Provider.of<AppDatabase>(context, listen: false),
     ).watchPerfectStreak(_userId).listen(_handleStreakUpdate);
@@ -61,12 +85,9 @@ class _HomePageState extends State<HomePage> {
     final current = result.currentStreak;
 
     if (_lastStreakCount != null) {
-      // 1. Trigger only if streak increases (User completed a perfect day)
       if (current > _lastStreakCount!) {
         _triggerBanner();
-      }
-      // 2. Hide immediately if streak decreases (User deleted a log)
-      else if (current < _lastStreakCount!) {
+      } else if (current < _lastStreakCount!) {
         _hideBanner();
       }
     }
@@ -104,46 +125,68 @@ class _HomePageState extends State<HomePage> {
       date.subtract(Duration(days: date.weekday - 1));
 
   bool _applies(Habit h, DateTime d) {
+    final habitStartDay = DateTime(
+      h.startDate.year,
+      h.startDate.month,
+      h.startDate.day,
+    );
+    final checkDay = DateTime(d.year, d.month, d.day);
+
+    if (checkDay.isBefore(habitStartDay)) return false;
+
     if (h.frequencyDays == null || h.frequencyDays!.isEmpty) return true;
-    final map = {
-      1: 'MON',
-      2: 'TUE',
-      3: 'WED',
-      4: 'THU',
-      5: 'FRI',
-      6: 'SAT',
-      7: 'SUN',
-    };
-    return h.frequencyDays!.toUpperCase().contains(map[d.weekday]!);
+    return h.frequencyDays!.toUpperCase().contains(_weekdayMap[d.weekday]!);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final userProvider = context.watch<UserProvider>();
-    final habitService = HabitService(
-      Provider.of<AppDatabase>(context, listen: false),
-    );
+    final userName = userProvider.name;
+    final avatar = userProvider.avatar;
+
+    final bool canLog = !_selectedDate.isAfter(_today);
+    final bool canJournal = !_selectedDate.isAfter(_today);
+
+    if (_memoizedDate != _selectedDate) {
+      _dailyCompletionsStream = _habitService.watchCompletionsForDate(
+        _userId,
+        _selectedDate,
+      );
+      _weeklyCompletionsStream = _habitService.watchCompletionsForDate(
+        _userId,
+        _getStartOfWeek(_selectedDate),
+      );
+      _memoizedDate = _selectedDate;
+    }
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Backgrounds
-          Positioned(
-            top: -60,
-            left: -80,
-            child: BlurCircle(
-              color: theme.colorScheme.primary.withOpacity(0.12),
-              size: 300,
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            right: -100,
-            child: BlurCircle(
-              color: theme.colorScheme.secondary.withOpacity(0.15),
-              size: 320,
+          // PERFORMANCE FIX: RepaintBoundary forces Flutter to render these expensive blurs
+          // into an offline image cache. Now, during page transitions, Flutter just moves
+          // the cached image instead of recalculating the blur on every frame.
+          RepaintBoundary(
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -60,
+                  left: -80,
+                  child: BlurCircle(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    size: 300,
+                  ),
+                ),
+                Positioned(
+                  bottom: 80,
+                  right: -100,
+                  child: BlurCircle(
+                    color: theme.colorScheme.secondary.withOpacity(0.15),
+                    size: 320,
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -154,19 +197,21 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const SizedBox(height: 20),
                   GreetingWidget(
-                    name: userProvider.name,
-                    avatar: userProvider.avatar,
+                    name: userName,
+                    avatar: avatar,
                   ),
                   const SizedBox(height: 20),
                   DateStrip(
                     selectedDate: _selectedDate,
                     today: _today,
-                    weekDays: _weekDays,
+                    dates: _datesList,
                     onDateSelected: (d) => setState(() => _selectedDate = d),
                   ),
                   const SizedBox(height: 20),
+
+                  // Use the memoized streams safely
                   StreamBuilder<List<Habit>>(
-                    stream: habitService.watchHabits(_userId),
+                    stream: _habitsStream,
                     builder: (context, hSnap) {
                       final all = hSnap.data ?? [];
                       final daily = all
@@ -188,20 +233,15 @@ class _HomePageState extends State<HomePage> {
                         return EmptyState(
                           message: "No habits today",
                           theme: theme,
+                          showCTA: _selectedDate == _today,
                         );
                       }
 
                       return StreamBuilder<List<HabitCompletion>>(
-                        stream: habitService.watchCompletionsForDate(
-                          _userId,
-                          _selectedDate,
-                        ),
+                        stream: _dailyCompletionsStream,
                         builder: (context, dComp) {
                           return StreamBuilder<List<HabitCompletion>>(
-                            stream: habitService.watchCompletionsForDate(
-                              _userId,
-                              _getStartOfWeek(_selectedDate),
-                            ),
+                            stream: _weeklyCompletionsStream,
                             builder: (context, wComp) {
                               return Column(
                                 children: [
@@ -212,6 +252,8 @@ class _HomePageState extends State<HomePage> {
                                       userId: _userId,
                                       selectedDate: _selectedDate,
                                       isToday: _selectedDate == _today,
+                                      canLog: canLog,
+                                      canJournal: canJournal,
                                     ),
                                   if (weekly.isNotEmpty) ...[
                                     const SizedBox(height: 28),
@@ -238,12 +280,11 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Celebration Banner
           TopCelebrationBanner(
             visible: _showBanner,
-            title: "Great Job!",
-            message: "You completed all habits for today",
-            animationSeed: _lastStreakCount ?? 0,
+            title: "Nice work, $userName!",
+            message: "All habits completed today",
+            // animationSeed: _lastStreakCount ?? 0,
           ),
         ],
       ),
