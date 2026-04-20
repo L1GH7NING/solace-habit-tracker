@@ -327,7 +327,7 @@ class _HabitContent extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _LoadingShimmer extends StatelessWidget {
-  const _LoadingShimmer({super.key});
+  const _LoadingShimmer();
 
   @override
   Widget build(BuildContext context) {

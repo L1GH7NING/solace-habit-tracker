@@ -9,6 +9,7 @@ import 'package:zenith_habit_tracker/features/auth/providers/user_provider.dart'
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
 import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
+import 'package:zenith_habit_tracker/features/home/services/journal_service.dart'; // Add this import
 import 'package:zenith_habit_tracker/features/home/widgets/daily_habits_section.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/date_strip.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/empty_state.dart';
@@ -25,9 +26,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final String _userId;
-  late DateTime _selectedDate;
   late DateTime _today;
   late List<DateTime> _datesList;
+
+  // State via ValueNotifier to prevent full page rebuilds
+  late final ValueNotifier<DateTime> _selectedDateNotifier;
 
   // Banner State
   bool _showBanner = false;
@@ -35,13 +38,14 @@ class _HomePageState extends State<HomePage> {
   Timer? _bannerTimer;
   StreamSubscription<PerfectStreakResult>? _streakSubscription;
 
-  // Stream Memoization
-  Stream<List<Habit>>? _habitsStream;
-  Stream<List<HabitCompletion>>? _dailyCompletionsStream;
-  Stream<List<HabitCompletion>>? _weeklyCompletionsStream;
-  Stream<List<HabitTargetHistoryData>>? _historyStream;
-  DateTime? _memoizedDate;
+  // Cached Services
   late final HabitService _habitService;
+  late final JournalService _journalService;
+  late final StatsService _statsService;
+
+  // Base Streams
+  Stream<List<Habit>>? _habitsStream;
+  Stream<List<HabitTargetHistoryData>>? _historyStream;
 
   static const Map<int, String> _weekdayMap = {
     1: 'MON',
@@ -59,7 +63,8 @@ class _HomePageState extends State<HomePage> {
     _userId = FirebaseAuth.instance.currentUser?.uid ?? 'guest';
     final now = DateTime.now();
     _today = DateTime(now.year, now.month, now.day);
-    _selectedDate = _today;
+    _selectedDateNotifier = ValueNotifier<DateTime>(_today);
+
     _datesList = List.generate(
       61,
       (index) =>
@@ -71,33 +76,35 @@ class _HomePageState extends State<HomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_habitsStream == null) {
-      final appDb = Provider.of<AppDatabase>(context, listen: false);
+      final appDb = context.read<AppDatabase>();
       _habitService = HabitService(appDb);
+      _journalService = JournalService(appDb);
+      _statsService = StatsService(appDb);
+
       _habitsStream = _habitService.watchHabits(_userId);
       _historyStream = appDb.watchTargetHistoryForUser(_userId);
     }
-    _streakSubscription ??= StatsService(
-      Provider.of<AppDatabase>(context, listen: false),
-    ).watchPerfectStreak(_userId).listen(_handleStreakUpdate);
+
+    _streakSubscription ??= _statsService
+        .watchPerfectStreak(_userId)
+        .listen(_handleStreakUpdate);
   }
 
   void _handleStreakUpdate(PerfectStreakResult result) {
     final current = result.currentStreak;
     if (_lastStreakCount != null) {
-      if (current > _lastStreakCount!) {
+      if (current > _lastStreakCount!)
         _triggerBanner();
-      } else if (current < _lastStreakCount!) {
+      else if (current < _lastStreakCount!)
         _hideBanner();
-      }
     }
     _lastStreakCount = current;
   }
 
   void _triggerBanner() async {
     bool? hasVibrator = await Vibration.hasVibrator();
-    if (hasVibrator == true) {
-      Vibration.vibrate(duration: 300, amplitude: 120);
-    }
+    if (hasVibrator == true) Vibration.vibrate(duration: 300, amplitude: 120);
+
     setState(() => _showBanner = true);
     _bannerTimer?.cancel();
     _bannerTimer = Timer(const Duration(seconds: 3), () {
@@ -107,15 +114,14 @@ class _HomePageState extends State<HomePage> {
 
   void _hideBanner() {
     _bannerTimer?.cancel();
-    if (mounted && _showBanner) {
-      setState(() => _showBanner = false);
-    }
+    if (mounted && _showBanner) setState(() => _showBanner = false);
   }
 
   @override
   void dispose() {
     _streakSubscription?.cancel();
     _bannerTimer?.cancel();
+    _selectedDateNotifier.dispose();
     super.dispose();
   }
 
@@ -130,36 +136,23 @@ class _HomePageState extends State<HomePage> {
     );
     final checkDay = DateTime(d.year, d.month, d.day);
     if (checkDay.isBefore(habitStartDay)) return false;
-    if (h.frequencyDays == null || h.frequencyDays!.isEmpty) return true;
+    if (h.frequencyDays?.isEmpty ?? true) return true;
     return h.frequencyDays!.toUpperCase().contains(_weekdayMap[d.weekday]!);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final userProvider = context.watch<UserProvider>();
-    final userName = userProvider.name;
-    final avatar = userProvider.avatar;
 
-    final bool canLog = !_selectedDate.isAfter(_today);
-    final bool canJournal = !_selectedDate.isAfter(_today);
-
-    if (_memoizedDate != _selectedDate) {
-      _dailyCompletionsStream = _habitService.watchCompletionsForDate(
-        _userId,
-        _selectedDate,
-      );
-      _weeklyCompletionsStream = _habitService.watchCompletionsForDate(
-        _userId,
-        _getStartOfWeek(_selectedDate),
-      );
-      _memoizedDate = _selectedDate;
-    }
+    // Performant state tracking: Only rebuilds HomePage if name/avatar changes
+    final userName = context.select<UserProvider, String>((p) => p.name);
+    final avatar = context.select<UserProvider, String?>((p) => p.avatar);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
+          // Background UI
           RepaintBoundary(
             child: Stack(
               children: [
@@ -182,96 +175,34 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
+
+          // Foreground UI
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  GreetingWidget(name: userName, avatar: avatar),
-                  const SizedBox(height: 20),
-                  DateStrip(
-                    selectedDate: _selectedDate,
-                    today: _today,
-                    dates: _datesList,
-                    onDateSelected: (d) => setState(() => _selectedDate = d),
-                  ),
-                  const SizedBox(height: 20),
-                  StreamBuilder<List<HabitTargetHistoryData>>(
-                    stream: _historyStream,
-                    builder: (context, historySnap) {
-                      final history = historySnap.data ?? [];
+              child: ValueListenableBuilder<DateTime>(
+                valueListenable: _selectedDateNotifier,
+                builder: (context, selectedDate, _) {
+                  final bool canLog = !selectedDate.isAfter(_today);
 
-                      return StreamBuilder<List<Habit>>(
-                        stream: _habitsStream,
-                        builder: (context, hSnap) {
-                          final all = hSnap.data ?? [];
-                          final daily = all
-                              .where(
-                                (h) =>
-                                    h.frequencyType == 'DAILY' &&
-                                    _applies(h, _selectedDate),
-                              )
-                              .toList();
-                          final weekly = all
-                              .where(
-                                (h) =>
-                                    h.frequencyType == 'WEEKLY' &&
-                                    _applies(h, _selectedDate),
-                              )
-                              .toList();
+                  return Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      GreetingWidget(name: userName, avatar: avatar),
+                      const SizedBox(height: 20),
+                      DateStrip(
+                        selectedDate: selectedDate,
+                        today: _today,
+                        dates: _datesList,
+                        onDateSelected: (d) => _selectedDateNotifier.value = d,
+                      ),
+                      const SizedBox(height: 20),
 
-                          if (daily.isEmpty && weekly.isEmpty) {
-                            return EmptyState(
-                              message: "No habits today",
-                              theme: theme,
-                              showCTA: _selectedDate == _today,
-                            );
-                          }
-
-                          return StreamBuilder<List<HabitCompletion>>(
-                            stream: _dailyCompletionsStream,
-                            builder: (context, dComp) {
-                              return StreamBuilder<List<HabitCompletion>>(
-                                stream: _weeklyCompletionsStream,
-                                builder: (context, wComp) {
-                                  return Column(
-                                    children: [
-                                      if (daily.isNotEmpty)
-                                        DailyHabitsSection(
-                                          dailyHabits: daily,
-                                          dailyCompletions: dComp.data ?? [],
-                                          userId: _userId,
-                                          selectedDate: _selectedDate,
-                                          isToday: _selectedDate == _today,
-                                          canLog: canLog,
-                                          canJournal: canJournal,
-                                          targetHistory: history,
-                                        ),
-                                      if (weekly.isNotEmpty) ...[
-                                        const SizedBox(height: 28),
-                                        WeeklyHabitsSection(
-                                          weeklyHabits: weekly,
-                                          weeklyCompletions: wComp.data ?? [],
-                                          userId: _userId,
-                                          weekStartDate: _getStartOfWeek(
-                                            _selectedDate,
-                                          ),
-                                          targetHistory: history,
-                                        ),
-                                      ],
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 140),
-                ],
+                      _buildHabitsSection(selectedDate, canLog, theme),
+                      const SizedBox(height: 140),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -282,6 +213,97 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+    );
+  }
+
+  // Isolated widget building to keep the build method clean
+  Widget _buildHabitsSection(
+    DateTime selectedDate,
+    bool canLog,
+    ThemeData theme,
+  ) {
+    final startOfWeek = _getStartOfWeek(selectedDate);
+
+    return StreamBuilder<List<HabitTargetHistoryData>>(
+      stream: _historyStream,
+      builder: (context, historySnap) {
+        final history = historySnap.data ?? [];
+
+        return StreamBuilder<List<Habit>>(
+          stream: _habitsStream,
+          builder: (context, hSnap) {
+            final all = hSnap.data ?? [];
+            final daily = all
+                .where(
+                  (h) =>
+                      h.frequencyType == 'DAILY' && _applies(h, selectedDate),
+                )
+                .toList();
+            final weekly = all
+                .where(
+                  (h) =>
+                      h.frequencyType == 'WEEKLY' && _applies(h, selectedDate),
+                )
+                .toList();
+
+            if (daily.isEmpty && weekly.isEmpty) {
+              return EmptyState(
+                message: "No habits today",
+                theme: theme,
+                showCTA: selectedDate == _today,
+              );
+            }
+
+            return StreamBuilder<List<HabitCompletion>>(
+              stream: _habitService.watchCompletionsForDate(
+                _userId,
+                selectedDate,
+              ),
+              builder: (context, dComp) {
+                return StreamBuilder<List<HabitCompletion>>(
+                  stream: _habitService.watchCompletionsForDate(
+                    _userId,
+                    startOfWeek,
+                  ),
+                  builder: (context, wComp) {
+                    return Column(
+                      children: [
+                        if (daily.isNotEmpty)
+                          DailyHabitsSection(
+                            dailyHabits: daily,
+                            dailyCompletions: dComp.data ?? [],
+                            userId: _userId,
+                            selectedDate: selectedDate,
+                            isToday: selectedDate == _today,
+                            canLog: canLog,
+                            canJournal: canLog,
+                            targetHistory: history,
+                            habitService: _habitService, // Passed down
+                            journalService: _journalService, // Passed down
+                            statsService: _statsService, // Passed down
+                          ),
+                        if (weekly.isNotEmpty) ...[
+                          const SizedBox(height: 28),
+                          WeeklyHabitsSection(
+                            weeklyHabits: weekly,
+                            weeklyCompletions: wComp.data ?? [],
+                            userId: _userId,
+                            weekStartDate: startOfWeek,
+                            targetHistory: history,
+                            habitService: _habitService, // Passed down
+                            journalService: _journalService, // Passed down
+                            statsService: _statsService, // Passed down
+                          ),
+                        ],
+                      ],
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

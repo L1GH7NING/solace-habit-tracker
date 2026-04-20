@@ -75,10 +75,10 @@ class AppRouter {
             builder: (context, state) => const CreateHabitPage(),
           ),
           GoRoute(
-            path: '/community',
-            name: 'community',
+            path: '/programs',
+            name: 'programs',
             builder: (context, state) =>
-                const _PlaceholderPage(title: 'Community'),
+                const _PlaceholderPage(title: 'Programs'),
           ),
           GoRoute(
             path: '/profile',

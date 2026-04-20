@@ -1,8 +1,6 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
@@ -17,6 +15,11 @@ class WeeklyHabitsSection extends StatelessWidget {
   final DateTime weekStartDate;
   final List<HabitTargetHistoryData> targetHistory;
 
+  // Passed down services
+  final HabitService habitService;
+  final JournalService journalService;
+  final StatsService statsService;
+
   const WeeklyHabitsSection({
     super.key,
     required this.weeklyHabits,
@@ -24,13 +27,16 @@ class WeeklyHabitsSection extends StatelessWidget {
     required this.userId,
     required this.weekStartDate,
     required this.targetHistory,
+    required this.habitService,
+    required this.journalService,
+    required this.statsService,
   });
 
   double _progressFor(Habit habit) => weeklyCompletions
       .where((c) => c.habitId == habit.id)
       .fold<double>(0.0, (sum, c) => sum + c.value);
 
-  double _targetFor(Habit habit, StatsService statsService) {
+  double _targetFor(Habit habit) {
     final habitHistory = targetHistory
         .where((h) => h.habitId == habit.id)
         .toList();
@@ -43,16 +49,9 @@ class WeeklyHabitsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appDb = Provider.of<AppDatabase>(context, listen: false);
-    final habitService = HabitService(appDb);
-    final journalService = JournalService(appDb);
-    final statsService = StatsService(appDb);
-
     final allDone =
         weeklyHabits.isNotEmpty &&
-        weeklyHabits.every(
-          (h) => _progressFor(h) >= _targetFor(h, statsService),
-        );
+        weeklyHabits.every((h) => _progressFor(h) >= _targetFor(h));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +63,7 @@ class WeeklyHabitsSection extends StatelessWidget {
             key: ValueKey('weekly_${habit.id}_$weekStartDate'),
             habit: habit,
             currentProgress: _progressFor(habit),
-            displayTarget: _targetFor(habit, statsService),
+            displayTarget: _targetFor(habit),
             onTap: () => context.push('/habit-info/${habit.id}'),
             onLog: (v) => habitService.logCompletionForDate(
               habitId: habit.id,

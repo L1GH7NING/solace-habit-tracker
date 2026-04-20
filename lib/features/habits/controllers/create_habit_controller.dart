@@ -6,6 +6,9 @@ import 'package:zenith_habit_tracker/data/local/app_database.dart'; // ⚠️ ad
 import 'package:drift/drift.dart' show Value;
 import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/habit_controller_base.dart';
+import 'dart:math';
+
+import 'package:zenith_habit_tracker/features/habits/widgets/habit_constants.dart';
 
 class CreateHabitController implements HabitControllerBase {
   final BuildContext context;
@@ -14,6 +17,7 @@ class CreateHabitController implements HabitControllerBase {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final logger = Logger();
+  final _random = Random();
 
   @override
   String selectedIcon = 'run';
@@ -38,11 +42,21 @@ class CreateHabitController implements HabitControllerBase {
 
   DateTime startDate = DateTime.now();
 
-  CreateHabitController({required this.context, required this.db});
+  CreateHabitController({required this.context, required this.db}) {
+    _assignRandomDefaults();
+  }
 
   void dispose() {
     titleController.dispose();
     descriptionController.dispose();
+  }
+
+  void _assignRandomDefaults() {
+    final randomIcon = iconOptions[_random.nextInt(iconOptions.length)];
+    final randomColor = colorOptions[_random.nextInt(colorOptions.length)];
+
+    selectedIcon = randomIcon.id;
+    selectedColor = randomColor.value;
   }
 
   // ── Infer habit type from unit ─────────────────────────────────────────────

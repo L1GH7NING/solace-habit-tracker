@@ -27,9 +27,9 @@ class BottomNav extends StatelessWidget {
     final selectedIndex = _indexForRoute(location);
     final items = [
       Icons.home_rounded,
-      Icons.list_rounded,
+      Icons.list_alt_rounded,
       Icons.add_circle_outline_rounded,
-      Icons.group_rounded,
+      Icons.widgets_rounded,
       Icons.person_rounded,
     ];
 
@@ -76,7 +76,7 @@ class BottomNav extends StatelessWidget {
                             case 0: context.go('/home');
                             case 1: context.go('/all');
                             case 2: context.go('/add-habit');
-                            case 3: context.go('/community');
+                            case 3: context.go('/programs');
                             case 4: context.go('/profile');
                           }
                         },

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/core/router/route_observer.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
@@ -22,6 +21,11 @@ class DailyHabitsSection extends StatefulWidget {
   final bool canJournal;
   final List<HabitTargetHistoryData> targetHistory;
 
+  // Accept Services from Parent to prevent recreation
+  final HabitService habitService;
+  final JournalService journalService;
+  final StatsService statsService;
+
   const DailyHabitsSection({
     super.key,
     required this.dailyHabits,
@@ -32,6 +36,9 @@ class DailyHabitsSection extends StatefulWidget {
     this.canLog = true,
     this.canJournal = true,
     required this.targetHistory,
+    required this.habitService,
+    required this.journalService,
+    required this.statsService,
   });
 
   @override
@@ -43,14 +50,11 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
   List<Habit> _stableOrder = [];
   String? _lastDateKey;
   bool _isActivelyLogging = false;
-  late final StatsService _statsService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final appDb = Provider.of<AppDatabase>(context, listen: false);
-    _statsService = StatsService(appDb);
     _stableOrder = _initialSort(widget.dailyHabits, widget.dailyCompletions);
     _lastDateKey = _dateKey(widget.selectedDate);
   }
@@ -90,7 +94,7 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     final habitHistory = widget.targetHistory
         .where((h) => h.habitId == habit.id)
         .toList();
-    return _statsService.targetOn(date, habitHistory, habit.targetValue);
+    return widget.statsService.targetOn(date, habitHistory, habit.targetValue);
   }
 
   @override
@@ -168,10 +172,6 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
 
   @override
   Widget build(BuildContext context) {
-    final appDb = Provider.of<AppDatabase>(context, listen: false);
-    final habitService = HabitService(appDb);
-    final journalService = JournalService(appDb);
-
     final completedCount = widget.dailyHabits
         .where(
           (h) =>
@@ -197,7 +197,7 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
             const SizedBox(width: 12),
             Expanded(
               child: StreamBuilder<PerfectStreakResult>(
-                stream: StatsService(appDb).watchPerfectStreak(widget.userId),
+                stream: widget.statsService.watchPerfectStreak(widget.userId),
                 builder: (context, streakSnap) =>
                     PerfectStreakCard(result: streakSnap.data),
               ),
@@ -224,7 +224,7 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
               onLog: (v) async {
                 _isActivelyLogging = true;
                 try {
-                  await habitService.logCompletionForDate(
+                  await widget.habitService.logCompletionForDate(
                     habitId: habit.id,
                     userId: widget.userId,
                     value: v,
@@ -239,7 +239,7 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
               onUndo: () async {
                 _isActivelyLogging = true;
                 try {
-                  await habitService.deleteCompletionsForDay(
+                  await widget.habitService.deleteCompletionsForDay(
                     habitId: habit.id,
                     userId: widget.userId,
                     date: widget.selectedDate,
@@ -250,7 +250,7 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
                 }
               },
               selectedDate: widget.selectedDate,
-              journalService: journalService,
+              journalService: widget.journalService,
             ),
           ),
       ],
