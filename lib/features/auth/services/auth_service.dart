@@ -7,7 +7,7 @@ class AuthService {
 
   static User? get currentUser => _auth.currentUser;
   static Stream<User?> get authStateChanges => _auth.authStateChanges();
-  static const bool forceOnboarding = true; //REMOVE FOR PROD
+  static const bool forceOnboarding = false; //REMOVE FOR PROD
 
   // 🔐 Email & Password Sign Up
   static Future<AuthResult> signUpWithEmail({

@@ -16,6 +16,7 @@ import 'journal_bottom_sheet.dart';
 class HabitCard extends StatefulWidget {
   final Habit habit;
   final double currentProgress;
+  final double? displayTarget;
   final bool canLog;
   final bool canJournal;
   final VoidCallback onTap;
@@ -28,6 +29,7 @@ class HabitCard extends StatefulWidget {
     super.key,
     required this.habit,
     required this.currentProgress,
+    this.displayTarget,
     this.canLog = true,
     this.canJournal = true,
     required this.onTap,
@@ -113,7 +115,7 @@ class _HabitCardState extends State<HabitCard> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final target = widget.habit.targetValue;
+    final target = widget.displayTarget ?? widget.habit.targetValue;
     final isDone = widget.currentProgress >= target;
 
     final progress = target > 0

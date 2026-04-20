@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 
 class HabitStats {
@@ -39,17 +40,46 @@ class StatsService {
   final AppDatabase db;
   StatsService(this.db);
 
+  // ── Helper ─────────────────────────────────────────────────────────────────
+
+  double targetOn(
+    DateTime date,
+    List<HabitTargetHistoryData> history,
+    double fallback,
+  ) {
+    // print(
+    //   'History rows: ${history.map((h) => 'effectiveFrom=${h.effectiveFrom}, target=${h.targetValue}').toList()}',
+    // );
+    // print('Checking date: $date, fallback: $fallback');
+    final applicable =
+        history.where((h) => !h.effectiveFrom.isAfter(date)).toList()
+          ..sort((a, b) => b.effectiveFrom.compareTo(a.effectiveFrom));
+    return applicable.isEmpty ? fallback : applicable.first.targetValue;
+  }
+
   // ── Per-habit stats ────────────────────────────────────────────────────────
 
   Stream<HabitStats> watchHabitStats(Habit habit) {
-    final query = db.select(db.habitCompletions)
+    final completionsQuery = db.select(db.habitCompletions)
       ..where((tbl) => tbl.habitId.equals(habit.id));
-    return query.watch().map(
-      (completions) => _calculateStats(habit, completions),
+    final historyQuery = db.select(db.habitTargetHistory)
+      ..where((tbl) => tbl.habitId.equals(habit.id));
+
+    return Rx.combineLatest2(
+      completionsQuery.watch(),
+      historyQuery.watch(),
+      (
+        List<HabitCompletion> completions,
+        List<HabitTargetHistoryData> history,
+      ) => _calculateStats(habit, completions, history),
     );
   }
 
-  HabitStats _calculateStats(Habit habit, List<HabitCompletion> completions) {
+  HabitStats _calculateStats(
+    Habit habit,
+    List<HabitCompletion> completions,
+    List<HabitTargetHistoryData> history,
+  ) {
     final today = _dateOnly(DateTime.now());
 
     DateTime start = _dateOnly(habit.startDate);
@@ -66,15 +96,21 @@ class StatsService {
       }
     }
 
-    final todayValue = habit.frequencyType == 'WEEKLY'
-        ? (progressMap[_startOfWeek(today)] ?? 0.0)
-        : (progressMap[today] ?? 0.0);
+    final todayKey = habit.frequencyType == 'WEEKLY'
+        ? _startOfWeek(today)
+        : today;
+    final todayValue = progressMap[todayKey] ?? 0.0;
+
+    bool isDoneOn(DateTime date) {
+      final progress = progressMap[date] ?? 0;
+      final target = targetOn(date, history, habit.targetValue);
+      return progress >= target;
+    }
 
     List<DateTime> applicableDates = [];
     DateTime current = start;
     if (progressMap.isNotEmpty) {
-      final firstLog =
-          progressMap.keys.reduce((a, b) => a.isBefore(b) ? a : b);
+      final firstLog = progressMap.keys.reduce((a, b) => a.isBefore(b) ? a : b);
       if (firstLog.isBefore(current)) current = firstLog;
     }
     while (!current.isAfter(today)) {
@@ -93,12 +129,9 @@ class StatsService {
       return date.isAtSameMomentAs(today);
     }
 
-    int bestStreak = 0;
-    int tempStreak = 0;
-    int daysMetTarget = 0;
+    int bestStreak = 0, tempStreak = 0, daysMetTarget = 0;
     for (var date in applicableDates) {
-      final isDone = (progressMap[date] ?? 0) >= habit.targetValue;
-      if (isDone) {
+      if (isDoneOn(date)) {
         daysMetTarget++;
         tempStreak++;
         if (tempStreak > bestStreak) bestStreak = tempStreak;
@@ -107,38 +140,32 @@ class StatsService {
       }
     }
 
-    final totalDone = daysMetTarget;
-
     int currentStreak = 0;
     for (int i = applicableDates.length - 1; i >= 0; i--) {
       final date = applicableDates[i];
-      final isDone = (progressMap[date] ?? 0) >= habit.targetValue;
-      if (isDone) {
+      if (isDoneOn(date)) {
         currentStreak++;
       } else {
         if (!isGracePeriod(date)) break;
       }
     }
 
-    final compRate =
-        applicableDates.isEmpty ? 0.0 : daysMetTarget / applicableDates.length;
+    final compRate = applicableDates.isEmpty
+        ? 0.0
+        : daysMetTarget / applicableDates.length;
 
     final last7DaysProgress = List.generate(7, (i) {
       final day = today.subtract(Duration(days: 6 - i));
-      final val = habit.frequencyType == 'WEEKLY'
-          ? (progressMap[_startOfWeek(day)] ?? 0)
-          : (progressMap[day] ?? 0);
-      return habit.targetValue > 0
-          ? (val / habit.targetValue).clamp(0.0, 1.0)
-          : 0.0;
+      final key = habit.frequencyType == 'WEEKLY' ? _startOfWeek(day) : day;
+      final val = progressMap[key] ?? 0;
+      final target = targetOn(key, history, habit.targetValue);
+      return target > 0 ? (val / target).clamp(0.0, 1.0) : 0.0;
     });
 
     final last7DaysCompletion = List.generate(7, (i) {
       final day = today.subtract(Duration(days: 6 - i));
-      final val = habit.frequencyType == 'WEEKLY'
-          ? (progressMap[_startOfWeek(day)] ?? 0)
-          : (progressMap[day] ?? 0);
-      return val >= habit.targetValue;
+      final key = habit.frequencyType == 'WEEKLY' ? _startOfWeek(day) : day;
+      return isDoneOn(key);
     });
 
     Map<DateTime, bool> weeklyCompletionMap = {};
@@ -146,15 +173,14 @@ class StatsService {
       final thisMonday = _startOfWeek(today);
       for (int i = 0; i < 5; i++) {
         final monday = thisMonday.subtract(Duration(days: (4 - i) * 7));
-        weeklyCompletionMap[monday] =
-            (progressMap[monday] ?? 0) >= habit.targetValue;
+        weeklyCompletionMap[monday] = isDoneOn(monday);
       }
     }
 
     return HabitStats(
       currentStreak: currentStreak,
       bestStreak: bestStreak,
-      totalDone: totalDone,
+      totalDone: daysMetTarget,
       completionRate: compRate,
       last7DaysProgress: last7DaysProgress,
       todayValue: todayValue,
@@ -163,13 +189,13 @@ class StatsService {
     );
   }
 
-  // ── Perfect streak (cross-habit, DAILY only) ──────────────────────────────
+  // ── Perfect streak ─────────────────────────────────────────────────────────
 
   Stream<PerfectStreakResult> watchPerfectStreak(String userId) {
     return db
         .customSelect(
           'SELECT 1',
-          readsFrom: {db.habits, db.habitCompletions},
+          readsFrom: {db.habits, db.habitCompletions, db.habitTargetHistory},
         )
         .watch()
         .asyncMap((_) => getPerfectStreak(userId));
@@ -178,13 +204,14 @@ class StatsService {
   Future<PerfectStreakResult> getPerfectStreak(String userId) async {
     final today = _dateOnly(DateTime.now());
 
-    // ✅ Only DAILY habits count — weekly habits are intentionally excluded
-    final allHabits = await (db.select(db.habits)
-          ..where((h) =>
-              h.userId.equals(userId) &
-              h.isArchived.equals(false) &
-              h.frequencyType.equals('DAILY')))
-        .get();
+    final allHabits =
+        await (db.select(db.habits)..where(
+              (h) =>
+                  h.userId.equals(userId) &
+                  h.isArchived.equals(false) &
+                  h.frequencyType.equals('DAILY'),
+            ))
+            .get();
 
     if (allHabits.isEmpty) {
       return PerfectStreakResult(
@@ -194,12 +221,18 @@ class StatsService {
       );
     }
 
-    // Load all completions for this user
-    final allCompletions = await (db.select(db.habitCompletions)
-          ..where((c) => c.userId.equals(userId)))
-        .get();
+    final allCompletions = await (db.select(
+      db.habitCompletions,
+    )..where((c) => c.userId.equals(userId))).get();
 
-    // Map: habitId → { date → total value logged that day }
+    final allHistory = await db.getTargetHistoryForUser(userId);
+    final historyByHabit = <int, List<HabitTargetHistoryData>>{};
+    for (final h in allHistory) {
+      historyByHabit
+          .putIfAbsent(h.habitId, () => <HabitTargetHistoryData>[])
+          .add(h);
+    }
+
     final Map<int, Map<DateTime, double>> completionsByHabit = {};
     for (final c in allCompletions) {
       final day = _dateOnly(c.completedAt);
@@ -207,55 +240,36 @@ class StatsService {
           (completionsByHabit[c.habitId]![day] ?? 0) + c.value;
     }
 
-    // Earliest date we care about = earliest habit start date
-    // We do NOT push this back based on completions — a habit doesn't
-    // exist before its start date regardless of back-dated logs.
     final earliestStart = allHabits
         .map((h) => _dateOnly(h.startDate))
         .reduce((a, b) => a.isBefore(b) ? a : b);
 
-    // ✅ Returns true only when ALL habits that are:
-    //    1. Started on or before `date`
-    //    2. Not ended before `date`
-    //    3. Scheduled on this weekday (frequencyDays)
-    // …have been completed to their target.
-    // Returns false (not true) when no habits are scheduled — prevents
-    // empty days and days before any habit existed from counting.
     bool isPerfectDay(DateTime date) {
-      // Never count days before the earliest habit started
       if (date.isBefore(earliestStart)) return false;
 
       final scheduled = allHabits.where((h) {
         final start = _dateOnly(h.startDate);
-
-        // ✅ Only include habits that have actually started by this date.
-        // Back-dated completions don't make a habit "exist" earlier.
         if (date.isBefore(start)) return false;
-
-        // Skip archived or ended habits
         if (h.endDate != null && date.isAfter(_dateOnly(h.endDate!))) {
           return false;
         }
-
-        // Must apply on this weekday (handles frequencyDays for DAILY habits
-        // that are only scheduled on certain days)
         return _appliesOnDate(h, date);
       }).toList();
 
-      // ✅ If no habits are scheduled this day, it is NOT a perfect day.
-      // This prevents gaps (e.g. no habits on a weekend) from padding streaks.
       if (scheduled.isEmpty) return false;
 
-      // ✅ Every scheduled habit must meet its target
       return scheduled.every((h) {
         final progress = completionsByHabit[h.id]?[date] ?? 0.0;
-        return progress >= h.targetValue;
+        final target = targetOn(
+          date,
+          historyByHabit[h.id] ?? <HabitTargetHistoryData>[],
+          h.targetValue,
+        );
+        return progress >= target;
       });
     }
 
-    // ── Best streak (forward pass) ────────────────────────────────────────
-    int bestStreak = 0;
-    int tempStreak = 0;
+    int bestStreak = 0, tempStreak = 0;
     DateTime day = earliestStart;
     while (!day.isAfter(today)) {
       if (isPerfectDay(day)) {
@@ -267,12 +281,8 @@ class StatsService {
       day = day.add(const Duration(days: 1));
     }
 
-    // ── Current streak (backward pass) ───────────────────────────────────
-    // Start from yesterday if today isn't complete yet — grace period
-    // means an in-progress today doesn't break an active streak.
     int currentStreak = 0;
     day = isPerfectDay(today) ? today : today.subtract(const Duration(days: 1));
-
     while (!day.isBefore(earliestStart)) {
       if (isPerfectDay(day)) {
         currentStreak++;
@@ -282,7 +292,6 @@ class StatsService {
       }
     }
 
-    // ── Last 7 days ───────────────────────────────────────────────────────
     final last7Days = List.generate(7, (i) {
       final d = today.subtract(Duration(days: 6 - i));
       return isPerfectDay(d);
@@ -305,12 +314,18 @@ class StatsService {
   bool _appliesOnDate(Habit habit, DateTime date) {
     final daysString = habit.frequencyDays ?? '';
     if (daysString.trim().isNotEmpty) {
-      final clean =
-          daysString.replaceAll(RegExp(r'[^a-zA-Z,]'), '').toUpperCase();
+      final clean = daysString
+          .replaceAll(RegExp(r'[^a-zA-Z,]'), '')
+          .toUpperCase();
       final days = clean.split(',');
       const map = {
-        1: 'MON', 2: 'TUE', 3: 'WED',
-        4: 'THU', 5: 'FRI', 6: 'SAT', 7: 'SUN',
+        1: 'MON',
+        2: 'TUE',
+        3: 'WED',
+        4: 'THU',
+        5: 'FRI',
+        6: 'SAT',
+        7: 'SUN',
       };
       return days.contains(map[date.weekday]);
     }

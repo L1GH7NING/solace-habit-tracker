@@ -148,33 +148,33 @@ class EditHabitController implements HabitControllerBase {
     }
 
     try {
-      await db.updateHabit(
-        HabitsCompanion(
-          id: Value(habit.id),
-          userId: Value(habit.userId),
-          title: Value(title),
-          description: Value(
-            descriptionController.text.trim().isEmpty
-                ? null
-                : descriptionController.text.trim(),
-          ),
-          startDate: Value(habit.startDate),
-          icon: Value(selectedIcon),
-          color: Value(selectedColor),
-          frequencyType: Value(frequencyType),
-          frequencyDays: Value(
-            frequencyDays.isEmpty ? null : frequencyDays.join(','),
-          ),
-          targetValue: Value(targetValue),
-          unit: Value(unit),
-          type: Value(_habitType),
-          habitTime: Value(habitTime),
-          reminderTime: Value(reminderTime),
-          updatedAt: Value(DateTime.now()),
-          isSynced: const Value(false),
-          pendingOperation: const Value('UPDATE'),
+      final updatedHabit = HabitsCompanion(
+        id: Value(habit.id),
+        userId: Value(habit.userId),
+        title: Value(title),
+        description: Value(
+          descriptionController.text.trim().isEmpty
+              ? null
+              : descriptionController.text.trim(),
         ),
+        startDate: Value(habit.startDate),
+        icon: Value(selectedIcon),
+        color: Value(selectedColor),
+        frequencyType: Value(frequencyType),
+        frequencyDays: Value(
+          frequencyDays.isEmpty ? null : frequencyDays.join(','),
+        ),
+        targetValue: Value(targetValue),
+        unit: Value(unit),
+        type: Value(_habitType),
+        habitTime: Value(habitTime),
+        reminderTime: Value(reminderTime),
+        updatedAt: Value(DateTime.now()),
+        isSynced: const Value(false),
+        pendingOperation: const Value('UPDATE'),
       );
+
+      await _updateHabitWithTargetHistory(updatedHabit); // ✅
 
       if (context.mounted) {
         showAppSnackBar(
@@ -187,6 +187,30 @@ class EditHabitController implements HabitControllerBase {
     } catch (e) {
       _showError('Failed to update habit.');
       return false;
+    }
+  }
+
+  // ✅ New private method — lives right here in the controller
+  Future<void> _updateHabitWithTargetHistory(
+    HabitsCompanion updatedHabit,
+  ) async {
+    await db.updateHabit(updatedHabit);
+
+    if (targetValue != habit.targetValue) {
+      await db.upsertTargetHistory(
+        HabitTargetHistoryCompanion(
+          habitId: Value(habit.id),
+          targetValue: Value(targetValue),
+          unit: Value(unit),
+          effectiveFrom: Value(
+            DateTime(
+              DateTime.now().year,
+              DateTime.now().month,
+              DateTime.now().day,
+            ),
+          ),
+        ),
+      );
     }
   }
 
@@ -208,11 +232,7 @@ class EditHabitController implements HabitControllerBase {
     );
 
     if (confirmed == true && context.mounted) {
-      showAppSnackBar(
-        context,
-        'Habit Deleted',
-        type: SnackBarType.warning,
-      );
+      showAppSnackBar(context, 'Habit Deleted', type: SnackBarType.warning);
       context.go("/home");
     }
   }

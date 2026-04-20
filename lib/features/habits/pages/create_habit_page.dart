@@ -1,5 +1,3 @@
-// lib/features/habits/pages/create_habit_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
@@ -36,7 +34,6 @@ class CreateHabitPageStateAccess {
   final Function(bool) setReminderEnabled;
   final Function(int) setSelectedReminderOffset;
   final Function() showAppearancePicker;
-  final Function() showPresetPicker;
 
   CreateHabitPageStateAccess({
     required this.controller,
@@ -54,7 +51,6 @@ class CreateHabitPageStateAccess {
     required this.setReminderEnabled,
     required this.setSelectedReminderOffset,
     required this.showAppearancePicker,
-    required this.showPresetPicker,
   });
 }
 
@@ -65,13 +61,7 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
   bool _hasTime = false;
   bool _reminderEnabled = false;
   int _selectedReminderOffset = 15;
-  static const List<int> _reminderOptions = [
-    5,
-    10,
-    15,
-    30,
-    60,
-  ]; // PERFORMANCE: Made this static const
+  static const List<int> _reminderOptions = [5, 10, 15, 30, 60];
 
   @override
   void initState() {
@@ -113,7 +103,6 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
     _controller.setFrequency(preset.frequencyType);
     _controller.targetValue = preset.targetValue;
     _controller.unit = preset.unit;
-
     _rebuild();
   }
 
@@ -147,7 +136,6 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Calculate these once per build instead of via getters
     final currentIconData = iconOptions
         .firstWhere(
           (opt) => opt.id == _controller.selectedIcon,
@@ -172,7 +160,6 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
       rebuild: _rebuild,
       handleSave: _handleSave,
       showAppearancePicker: _showAppearancePicker,
-      showPresetPicker: _showPresetPicker,
       setHasTime: (val) => setState(() => _hasTime = val),
       setSelectedTime: (val) => setState(() => _selectedTime = val),
       setReminderEnabled: (val) => setState(() => _reminderEnabled = val),
@@ -186,22 +173,38 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         toolbarHeight: 70,
+        titleSpacing: 24,
         title: Text(
           'New Habit',
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.5,
           ),
         ),
-        centerTitle: true,
+        centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: TextButton.icon(
+              onPressed: _showPresetPicker,
+              icon: Text(
+                'Presets',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: accentColor,
+                ),
+              ),
+              label: Icon(Icons.chevron_right, size: 18, color: accentColor),
+            ),
+          ),
+        ],
       ),
       body: Stack(
         children: [
-          // 🔥 PERFORMANCE FIX: RepaintBoundary isolates the heavy blurs!
           RepaintBoundary(
             child: Stack(
               children: [
@@ -224,7 +227,6 @@ class _CreateHabitPageState extends State<CreateHabitPage> {
               ],
             ),
           ),
-
           SafeArea(bottom: false, child: CreateHabitView(access: access)),
         ],
       ),

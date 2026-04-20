@@ -20,6 +20,7 @@ class DailyHabitsSection extends StatefulWidget {
   final bool isToday;
   final bool canLog;
   final bool canJournal;
+  final List<HabitTargetHistoryData> targetHistory;
 
   const DailyHabitsSection({
     super.key,
@@ -30,6 +31,7 @@ class DailyHabitsSection extends StatefulWidget {
     required this.isToday,
     this.canLog = true,
     this.canJournal = true,
+    required this.targetHistory,
   });
 
   @override
@@ -40,15 +42,15 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     with RouteAware, WidgetsBindingObserver {
   List<Habit> _stableOrder = [];
   String? _lastDateKey;
-
-  // ✅ Set to true while the user is actively logging in this session.
-  // Prevents a completion-driven didUpdateWidget from re-sorting mid-tap.
   bool _isActivelyLogging = false;
+  late final StatsService _statsService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final appDb = Provider.of<AppDatabase>(context, listen: false);
+    _statsService = StatsService(appDb);
     _stableOrder = _initialSort(widget.dailyHabits, widget.dailyCompletions);
     _lastDateKey = _dateKey(widget.selectedDate);
   }
@@ -56,7 +58,6 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Subscribe to route events (safe to call multiple times)
     final route = ModalRoute.of(context);
     if (route != null) {
       routeObserver.subscribe(this, route);
@@ -70,27 +71,26 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     super.dispose();
   }
 
-  // ─── RouteAware ───────────────────────────────────────────────────────────
-
-  /// Called when the user pops back to this route from a child route.
   @override
   void didPopNext() => _resortNow();
 
-  // ─── WidgetsBindingObserver ───────────────────────────────────────────────
-
-  /// Called when the app resumes from background.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) _resortNow();
   }
-
-  // ─── Helpers ─────────────────────────────────────────────────────────────
 
   void _resortNow() {
     if (!mounted) return;
     setState(() {
       _stableOrder = _initialSort(widget.dailyHabits, widget.dailyCompletions);
     });
+  }
+
+  double _targetForHabitOnDate(Habit habit, DateTime date) {
+    final habitHistory = widget.targetHistory
+        .where((h) => h.habitId == habit.id)
+        .toList();
+    return _statsService.targetOn(date, habitHistory, habit.targetValue);
   }
 
   @override
@@ -115,8 +115,6 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
       return;
     }
 
-    // ✅ Completions changed but we're mid-session: only re-sort if nothing
-    // is actively being logged (i.e. this is a background/external update).
     if (!_isActivelyLogging &&
         _completionsChanged(old.dailyCompletions, widget.dailyCompletions)) {
       _resortNow();
@@ -145,8 +143,10 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     List<HabitCompletion> completions,
   ) {
     return List<Habit>.from(habits)..sort((a, b) {
-      final isCompletedA = _progressFor(a, completions) >= a.targetValue;
-      final isCompletedB = _progressFor(b, completions) >= b.targetValue;
+      final targetA = _targetForHabitOnDate(a, widget.selectedDate);
+      final targetB = _targetForHabitOnDate(b, widget.selectedDate);
+      final isCompletedA = _progressFor(a, completions) >= targetA;
+      final isCompletedB = _progressFor(b, completions) >= targetB;
       if (isCompletedA != isCompletedB) return isCompletedA ? 1 : -1;
 
       final timeA = a.habitTime;
@@ -173,7 +173,11 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
     final journalService = JournalService(appDb);
 
     final completedCount = widget.dailyHabits
-        .where((h) => _currentProgressFor(h) >= h.targetValue)
+        .where(
+          (h) =>
+              _currentProgressFor(h) >=
+              _targetForHabitOnDate(h, widget.selectedDate),
+        )
         .length;
 
     final formattedDate = DateFormat('MMMM d').format(widget.selectedDate);
@@ -207,18 +211,17 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
               : "Habits for $formattedDate",
         ),
         const SizedBox(height: 12),
-
         for (final habit in _stableOrder)
           RepaintBoundary(
             key: ValueKey(habit.id),
             child: HabitCard(
               habit: habit,
               currentProgress: _currentProgressFor(habit),
+              displayTarget: _targetForHabitOnDate(habit, widget.selectedDate),
               canLog: widget.canLog,
               canJournal: widget.canJournal,
               onTap: () => context.push('/habit-info/${habit.id}'),
               onLog: (v) async {
-                // ✅ Flag that we're logging so didUpdateWidget doesn't re-sort
                 _isActivelyLogging = true;
                 try {
                   await habitService.logCompletionForDate(
@@ -229,8 +232,6 @@ class _DailyHabitsSectionState extends State<DailyHabitsSection>
                   );
                   await Future.delayed(const Duration(milliseconds: 120));
                 } finally {
-                  // Small extra buffer so the stream emission from the DB
-                  // write also lands while the flag is still true
                   await Future.delayed(const Duration(milliseconds: 150));
                   _isActivelyLogging = false;
                 }

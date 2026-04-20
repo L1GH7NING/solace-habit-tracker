@@ -1,4 +1,3 @@
-
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/habit_preset_bottom_sheet.dart';
 
@@ -161,5 +160,174 @@ final List<HabitPreset> defaultPresets = [
     iconId: 'sleep',
     targetValue: 8.0,
     unit: 'hours',
+  ),
+  // Health & Fitness
+  const HabitPreset(
+    title: 'Morning Run',
+    description: 'Start the day with a run',
+    colorValue: 0xFF10B981,
+    iconId: 'run',
+    targetValue: 30.0,
+    unit: 'minutes',
+  ),
+  const HabitPreset(
+    title: 'Walk 10k Steps',
+    description: 'Stay active throughout the day',
+    colorValue: 0xFF22C55E,
+    iconId: 'run',
+    targetValue: 10000.0,
+    unit: 'steps',
+  ),
+  const HabitPreset(
+    title: 'Stretch',
+    description: 'Daily flexibility routine',
+    colorValue: 0xFF14B8A6,
+    iconId: 'breathe',
+    targetValue: 10.0,
+    unit: 'minutes',
+  ),
+  const HabitPreset(
+    title: 'No Junk Food',
+    description: 'Eat clean today',
+    colorValue: 0xFFEF4444,
+    iconId: 'diet',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Vitamins',
+    description: 'Take your supplements',
+    colorValue: 0xFFF97316,
+    iconId: 'health',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Cycling',
+    description: 'Ride your bike',
+    colorValue: 0xFF0EA5E9,
+    iconId: 'bike',
+    targetValue: 30.0,
+    unit: 'minutes',
+  ),
+
+  // Mind & Wellness
+  const HabitPreset(
+    title: 'No Phone in Bed',
+    description: 'Better sleep hygiene',
+    colorValue: 0xFF5D5FEF,
+    iconId: 'moon',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Gratitude',
+    description: 'Write 3 things you are grateful for',
+    colorValue: 0xFFEC4899,
+    iconId: 'gratitude',
+    targetValue: 3.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Deep Work',
+    description: 'Focused, distraction-free work',
+    colorValue: 0xFF3F3F46,
+    iconId: 'focus',
+    targetValue: 2.0,
+    unit: 'hours',
+  ),
+  const HabitPreset(
+    title: 'No Social Media',
+    description: 'Digital detox',
+    colorValue: 0xFF71717A,
+    iconId: 'moon',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+
+  // Learning
+  const HabitPreset(
+    title: 'Practice Language',
+    description: 'Daily language learning',
+    colorValue: 0xFFF59E0B,
+    iconId: 'language',
+    targetValue: 15.0,
+    unit: 'minutes',
+  ),
+  const HabitPreset(
+    title: 'Watch Educational Video',
+    description: 'Learn something new',
+    colorValue: 0xFF8B5CF6,
+    iconId: 'lightbulb',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Practice Instrument',
+    description: 'Daily music practice',
+    colorValue: 0xFFE11D48,
+    iconId: 'music',
+    targetValue: 20.0,
+    unit: 'minutes',
+  ),
+
+  // Productivity
+  const HabitPreset(
+    title: 'Plan Tomorrow',
+    description: 'Prepare your to-do list',
+    colorValue: 0xFF64748B,
+    iconId: 'plan',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Inbox Zero',
+    description: 'Clear your email inbox',
+    colorValue: 0xFF3B82F6,
+    iconId: 'list',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'No Spending',
+    description: 'Avoid unnecessary purchases',
+    colorValue: 0xFF22C55E,
+    iconId: 'wallet',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+
+  // Home & Lifestyle
+  const HabitPreset(
+    title: 'Make Bed',
+    description: 'Start the day tidy',
+    colorValue: 0xFF06B6D4,
+    iconId: 'clean',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Cook at Home',
+    description: 'Skip takeout today',
+    colorValue: 0xFFF97316,
+    iconId: 'cook',
+    targetValue: 1.0,
+    unit: 'times',
+  ),
+  const HabitPreset(
+    title: 'Sunlight',
+    description: 'Get outside for fresh air',
+    colorValue: 0xFFF59E0B,
+    iconId: 'sun',
+    targetValue: 15.0,
+    unit: 'minutes',
+  ),
+  const HabitPreset(
+    title: 'Water Plants',
+    description: 'Keep your plants alive',
+    colorValue: 0xFF10B981,
+    iconId: 'plant',
+    targetValue: 1.0,
+    unit: 'times',
   ),
 ];

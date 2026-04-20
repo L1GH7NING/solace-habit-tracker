@@ -1,7 +1,10 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
+import 'package:zenith_habit_tracker/features/habits/services/stats_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/habit_service.dart';
 import 'package:zenith_habit_tracker/features/home/services/journal_service.dart';
 import 'package:zenith_habit_tracker/features/home/widgets/habit_card/habit_card.dart';
@@ -12,6 +15,7 @@ class WeeklyHabitsSection extends StatelessWidget {
   final List<HabitCompletion> weeklyCompletions;
   final String userId;
   final DateTime weekStartDate;
+  final List<HabitTargetHistoryData> targetHistory;
 
   const WeeklyHabitsSection({
     super.key,
@@ -19,25 +23,36 @@ class WeeklyHabitsSection extends StatelessWidget {
     required this.weeklyCompletions,
     required this.userId,
     required this.weekStartDate,
+    required this.targetHistory,
   });
 
   double _progressFor(Habit habit) => weeklyCompletions
       .where((c) => c.habitId == habit.id)
       .fold<double>(0.0, (sum, c) => sum + c.value);
 
+  double _targetFor(Habit habit, StatsService statsService) {
+    final habitHistory = targetHistory
+        .where((h) => h.habitId == habit.id)
+        .toList();
+    return statsService.targetOn(
+      weekStartDate,
+      habitHistory,
+      habit.targetValue,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final appDb = Provider.of<AppDatabase>(context, listen: false);
-    final habitService = HabitService(
-      appDb,
-    );
-
+    final habitService = HabitService(appDb);
     final journalService = JournalService(appDb);
+    final statsService = StatsService(appDb);
 
-    // Check if all weekly habits in this list are finished
     final allDone =
         weeklyHabits.isNotEmpty &&
-        weeklyHabits.every((h) => _progressFor(h) >= h.targetValue);
+        weeklyHabits.every(
+          (h) => _progressFor(h) >= _targetFor(h, statsService),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -49,6 +64,7 @@ class WeeklyHabitsSection extends StatelessWidget {
             key: ValueKey('weekly_${habit.id}_$weekStartDate'),
             habit: habit,
             currentProgress: _progressFor(habit),
+            displayTarget: _targetFor(habit, statsService),
             onTap: () => context.push('/habit-info/${habit.id}'),
             onLog: (v) => habitService.logCompletionForDate(
               habitId: habit.id,
@@ -84,7 +100,7 @@ class AllWeeklyCompletedMessage extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.emoji_events_rounded, // trophy vibe > check icon
+            Icons.emoji_events_rounded,
             size: 20,
             color: theme.colorScheme.primary,
           ),

@@ -35,14 +35,14 @@ class _HomePageState extends State<HomePage> {
   Timer? _bannerTimer;
   StreamSubscription<PerfectStreakResult>? _streakSubscription;
 
-  // Stream Memoization (Prevents rebuilding streams on every frame)
+  // Stream Memoization
   Stream<List<Habit>>? _habitsStream;
   Stream<List<HabitCompletion>>? _dailyCompletionsStream;
   Stream<List<HabitCompletion>>? _weeklyCompletionsStream;
+  Stream<List<HabitTargetHistoryData>>? _historyStream;
   DateTime? _memoizedDate;
   late final HabitService _habitService;
 
-  // Cached weekday map for O(1) lookups during filtering
   static const Map<int, String> _weekdayMap = {
     1: 'MON',
     2: 'TUE',
@@ -71,10 +71,10 @@ class _HomePageState extends State<HomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_habitsStream == null) {
-      _habitService = HabitService(
-        Provider.of<AppDatabase>(context, listen: false),
-      );
+      final appDb = Provider.of<AppDatabase>(context, listen: false);
+      _habitService = HabitService(appDb);
       _habitsStream = _habitService.watchHabits(_userId);
+      _historyStream = appDb.watchTargetHistoryForUser(_userId);
     }
     _streakSubscription ??= StatsService(
       Provider.of<AppDatabase>(context, listen: false),
@@ -83,7 +83,6 @@ class _HomePageState extends State<HomePage> {
 
   void _handleStreakUpdate(PerfectStreakResult result) {
     final current = result.currentStreak;
-
     if (_lastStreakCount != null) {
       if (current > _lastStreakCount!) {
         _triggerBanner();
@@ -91,7 +90,6 @@ class _HomePageState extends State<HomePage> {
         _hideBanner();
       }
     }
-
     _lastStreakCount = current;
   }
 
@@ -131,9 +129,7 @@ class _HomePageState extends State<HomePage> {
       h.startDate.day,
     );
     final checkDay = DateTime(d.year, d.month, d.day);
-
     if (checkDay.isBefore(habitStartDay)) return false;
-
     if (h.frequencyDays == null || h.frequencyDays!.isEmpty) return true;
     return h.frequencyDays!.toUpperCase().contains(_weekdayMap[d.weekday]!);
   }
@@ -164,9 +160,6 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // PERFORMANCE FIX: RepaintBoundary forces Flutter to render these expensive blurs
-          // into an offline image cache. Now, during page transitions, Flutter just moves
-          // the cached image instead of recalculating the blur on every frame.
           RepaintBoundary(
             child: Stack(
               children: [
@@ -189,17 +182,13 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
                   const SizedBox(height: 20),
-                  GreetingWidget(
-                    name: userName,
-                    avatar: avatar,
-                  ),
+                  GreetingWidget(name: userName, avatar: avatar),
                   const SizedBox(height: 20),
                   DateStrip(
                     selectedDate: _selectedDate,
@@ -208,65 +197,72 @@ class _HomePageState extends State<HomePage> {
                     onDateSelected: (d) => setState(() => _selectedDate = d),
                   ),
                   const SizedBox(height: 20),
+                  StreamBuilder<List<HabitTargetHistoryData>>(
+                    stream: _historyStream,
+                    builder: (context, historySnap) {
+                      final history = historySnap.data ?? [];
 
-                  // Use the memoized streams safely
-                  StreamBuilder<List<Habit>>(
-                    stream: _habitsStream,
-                    builder: (context, hSnap) {
-                      final all = hSnap.data ?? [];
-                      final daily = all
-                          .where(
-                            (h) =>
-                                h.frequencyType == 'DAILY' &&
-                                _applies(h, _selectedDate),
-                          )
-                          .toList();
-                      final weekly = all
-                          .where(
-                            (h) =>
-                                h.frequencyType == 'WEEKLY' &&
-                                _applies(h, _selectedDate),
-                          )
-                          .toList();
+                      return StreamBuilder<List<Habit>>(
+                        stream: _habitsStream,
+                        builder: (context, hSnap) {
+                          final all = hSnap.data ?? [];
+                          final daily = all
+                              .where(
+                                (h) =>
+                                    h.frequencyType == 'DAILY' &&
+                                    _applies(h, _selectedDate),
+                              )
+                              .toList();
+                          final weekly = all
+                              .where(
+                                (h) =>
+                                    h.frequencyType == 'WEEKLY' &&
+                                    _applies(h, _selectedDate),
+                              )
+                              .toList();
 
-                      if (daily.isEmpty && weekly.isEmpty) {
-                        return EmptyState(
-                          message: "No habits today",
-                          theme: theme,
-                          showCTA: _selectedDate == _today,
-                        );
-                      }
+                          if (daily.isEmpty && weekly.isEmpty) {
+                            return EmptyState(
+                              message: "No habits today",
+                              theme: theme,
+                              showCTA: _selectedDate == _today,
+                            );
+                          }
 
-                      return StreamBuilder<List<HabitCompletion>>(
-                        stream: _dailyCompletionsStream,
-                        builder: (context, dComp) {
                           return StreamBuilder<List<HabitCompletion>>(
-                            stream: _weeklyCompletionsStream,
-                            builder: (context, wComp) {
-                              return Column(
-                                children: [
-                                  if (daily.isNotEmpty)
-                                    DailyHabitsSection(
-                                      dailyHabits: daily,
-                                      dailyCompletions: dComp.data ?? [],
-                                      userId: _userId,
-                                      selectedDate: _selectedDate,
-                                      isToday: _selectedDate == _today,
-                                      canLog: canLog,
-                                      canJournal: canJournal,
-                                    ),
-                                  if (weekly.isNotEmpty) ...[
-                                    const SizedBox(height: 28),
-                                    WeeklyHabitsSection(
-                                      weeklyHabits: weekly,
-                                      weeklyCompletions: wComp.data ?? [],
-                                      userId: _userId,
-                                      weekStartDate: _getStartOfWeek(
-                                        _selectedDate,
-                                      ),
-                                    ),
-                                  ],
-                                ],
+                            stream: _dailyCompletionsStream,
+                            builder: (context, dComp) {
+                              return StreamBuilder<List<HabitCompletion>>(
+                                stream: _weeklyCompletionsStream,
+                                builder: (context, wComp) {
+                                  return Column(
+                                    children: [
+                                      if (daily.isNotEmpty)
+                                        DailyHabitsSection(
+                                          dailyHabits: daily,
+                                          dailyCompletions: dComp.data ?? [],
+                                          userId: _userId,
+                                          selectedDate: _selectedDate,
+                                          isToday: _selectedDate == _today,
+                                          canLog: canLog,
+                                          canJournal: canJournal,
+                                          targetHistory: history,
+                                        ),
+                                      if (weekly.isNotEmpty) ...[
+                                        const SizedBox(height: 28),
+                                        WeeklyHabitsSection(
+                                          weeklyHabits: weekly,
+                                          weeklyCompletions: wComp.data ?? [],
+                                          userId: _userId,
+                                          weekStartDate: _getStartOfWeek(
+                                            _selectedDate,
+                                          ),
+                                          targetHistory: history,
+                                        ),
+                                      ],
+                                    ],
+                                  );
+                                },
                               );
                             },
                           );
@@ -279,12 +275,10 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-
           TopCelebrationBanner(
             visible: _showBanner,
             title: "Nice work, $userName!",
             message: "All habits completed today",
-            // animationSeed: _lastStreakCount ?? 0,
           ),
         ],
       ),

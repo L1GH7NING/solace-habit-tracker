@@ -1,5 +1,3 @@
-// Inside lib/features/habits/views/create_habit_view.dart
-
 import 'package:flutter/material.dart';
 import 'package:zenith_habit_tracker/features/habits/pages/create_habit_page.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/daily_goal_selector.dart';
@@ -25,30 +23,7 @@ class CreateHabitView extends StatelessWidget {
             iconData: access.currentIconData,
             onTap: access.showAppearancePicker,
           ),
-          const SizedBox(height: 24),
-
-          Center(
-            child: FilledButton.tonalIcon(
-              onPressed: access.showPresetPicker,
-              icon: const Icon(
-                Icons.auto_awesome,
-              ), // Good practice to include an icon if using .tonalIcon
-              label: const Text('Choose from a Preset'),
-              style: FilledButton.styleFrom(
-                backgroundColor: access.accentColor.withOpacity(0.15),
-                foregroundColor: access.accentColor,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-            ),
-          ),
           const SizedBox(height: 32),
-
           const SectionLabel(label: "WHAT'S YOUR NEW GOAL?"),
           const SizedBox(height: 10),
           HabitNameInput(controller: access.controller.titleController),
@@ -67,7 +42,6 @@ class CreateHabitView extends StatelessWidget {
                   access.rebuild();
                 },
               ),
-
               AnimatedSize(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.fastOutSlowIn,
@@ -90,9 +64,7 @@ class CreateHabitView extends StatelessWidget {
                       : const SizedBox.shrink(key: ValueKey('empty_picker')),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               DailyGoalSelector(
                 accentColor: access.accentColor,
                 habitName: access.controller.titleController.text,
@@ -122,9 +94,9 @@ class CreateHabitView extends StatelessWidget {
                 initialTime: access.selectedTime,
                 builder: (BuildContext context, Widget? child) {
                   return MediaQuery(
-                    data: MediaQuery.of(
-                      context,
-                    ).copyWith(alwaysUse24HourFormat: false),
+                    data: MediaQuery.of(context).copyWith(
+                      alwaysUse24HourFormat: false,
+                    ),
                     child: child!,
                   );
                 },
@@ -150,13 +122,12 @@ class CreateHabitView extends StatelessWidget {
               },
             ),
           ],
-
           const SizedBox(height: 28),
           PrimaryGradientButton(
             text: 'Create Habit',
             onPressed: access.handleSave,
           ),
-          const SizedBox(height: 160), // Keep padding for bottom scrolling
+          const SizedBox(height: 160),
         ],
       ),
     );

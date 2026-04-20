@@ -61,14 +61,24 @@ class JournalEntries extends Table {
   TextColumn get pendingOperation => text().nullable()();
 }
 
+class HabitTargetHistory extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get habitId => integer().references(Habits, #id)();
+  RealColumn get targetValue => real()();
+  TextColumn get unit => text()();
+  DateTimeColumn get effectiveFrom => dateTime()();
+}
+
 // ── Database ─────────────────────────────────────────────────────────────────
 
-@DriftDatabase(tables: [Habits, HabitCompletions, JournalEntries])
+@DriftDatabase(
+  tables: [Habits, HabitCompletions, JournalEntries, HabitTargetHistory],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -91,6 +101,13 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await migrator.createTable(journalEntries);
+      }
+      if (from < 5) {
+        await migrator.createTable(habitTargetHistory);
+        await customStatement('''
+          INSERT INTO habit_target_history (habit_id, target_value, unit, effective_from)
+          SELECT id, target_value, unit, start_date FROM habits
+        ''');
       }
     },
   );
@@ -218,6 +235,80 @@ class AppDatabase extends _$AppDatabase {
           pendingOperation: const Value(null),
         ),
       );
+
+  // ── Target History ────────────────────────────────────────────────────────
+
+  Future<void> upsertTargetHistory(HabitTargetHistoryCompanion entry) async {
+    final today = DateTime(
+      entry.effectiveFrom.value.year,
+      entry.effectiveFrom.value.month,
+      entry.effectiveFrom.value.day,
+    );
+    final tomorrow = today.add(const Duration(days: 1));
+
+    // Check if a row already exists for this habit on this date
+    final existing =
+        await (select(habitTargetHistory)..where(
+              (h) =>
+                  h.habitId.equals(entry.habitId.value) &
+                  h.effectiveFrom.isBiggerOrEqualValue(today) &
+                  h.effectiveFrom.isSmallerThanValue(tomorrow),
+            ))
+            .getSingleOrNull();
+
+    if (existing != null) {
+      // Update the existing row instead of inserting a new one
+      await (update(
+        habitTargetHistory,
+      )..where((h) => h.id.equals(existing.id))).write(
+        HabitTargetHistoryCompanion(
+          targetValue: entry.targetValue,
+          unit: entry.unit,
+        ),
+      );
+    } else {
+      await into(habitTargetHistory).insert(entry);
+    }
+  }
+
+  Future<List<HabitTargetHistoryData>> getTargetHistory(int habitId) =>
+      (select(habitTargetHistory)
+            ..where((h) => h.habitId.equals(habitId))
+            ..orderBy([(h) => OrderingTerm.asc(h.effectiveFrom)]))
+          .get();
+
+  Future<List<HabitTargetHistoryData>> getTargetHistoryForUser(
+    String userId,
+  ) async {
+    final userHabits = await (select(
+      habits,
+    )..where((h) => h.userId.equals(userId))).get();
+    final ids = userHabits.map((h) => h.id).toList();
+    return (select(
+      habitTargetHistory,
+    )..where((h) => h.habitId.isIn(ids))).get();
+  }
+
+  Future<void> insertTargetHistory(HabitTargetHistoryCompanion entry) =>
+      into(habitTargetHistory).insert(entry);
+
+  Stream<List<HabitTargetHistoryData>> watchTargetHistory(int habitId) =>
+      (select(habitTargetHistory)
+            ..where((h) => h.habitId.equals(habitId))
+            ..orderBy([(h) => OrderingTerm.asc(h.effectiveFrom)]))
+          .watch();
+
+  Stream<List<HabitTargetHistoryData>> watchTargetHistoryForUser(
+    String userId,
+  ) async* {
+    final userHabits = await (select(
+      habits,
+    )..where((h) => h.userId.equals(userId))).get();
+    final ids = userHabits.map((h) => h.id).toList();
+    yield* (select(
+      habitTargetHistory,
+    )..where((h) => h.habitId.isIn(ids))).watch();
+  }
 }
 
 // ── Connection ───────────────────────────────────────────────────────────────

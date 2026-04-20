@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:zenith_habit_tracker/core/theme/adaptive_colors.dart';
 import 'package:zenith_habit_tracker/data/local/app_database.dart';
 import 'package:zenith_habit_tracker/features/common/widgets/blur_circle.dart';
-import 'package:zenith_habit_tracker/features/common/widgets/snackbar.dart';
 import 'package:zenith_habit_tracker/features/habits/controllers/edit_habit_controller.dart';
 import 'package:zenith_habit_tracker/features/habits/views/habit_journal_view.dart';
 import 'package:zenith_habit_tracker/features/habits/widgets/edit_habit_bottom_nav.dart';
@@ -166,12 +165,25 @@ class _HabitInfoPageState extends State<HabitInfoPage> {
       reminderMinutes = (habitMinutes - _selectedReminderOffset).clamp(0, 1440);
     }
 
-    await _controller!.saveHabit(
+    final success = await _controller!.saveHabit(
       habitTime: habitMinutes,
       reminderTime: reminderMinutes,
     );
 
-    if (!mounted) return;
+    if (!mounted || !success) return;
+
+    // ✅ Reload the habit so _habit and _controller reflect the new values
+    final updated = await _db.getHabitById(int.parse(widget.habitId));
+    if (updated != null && mounted) {
+      setState(() {
+        _habit = updated;
+        _controller = EditHabitController(
+          context: context,
+          db: _db,
+          habit: updated,
+        );
+      });
+    }
   }
 
   @override

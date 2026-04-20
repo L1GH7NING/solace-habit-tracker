@@ -58,7 +58,7 @@ class HabitPresetBottomSheet extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Text(
-                    'Choose a preset',
+                    'Start a new habit',
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
